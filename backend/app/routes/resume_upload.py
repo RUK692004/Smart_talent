@@ -1,6 +1,7 @@
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, UploadFile, File, HTTPException
 import os
 import shutil
+from app.services.file_parser import extract_text
 
 router = APIRouter()
 
@@ -16,18 +17,21 @@ def is_allowed_file(filename: str) -> bool:
 @router.post("/upload-resume")
 def upload_resume(file: UploadFile = File(...)):
     if not is_allowed_file(file.filename):
-        return {
-            "filename": file.filename,
-            "status": "failed",
-            "reason": "Unsupported file type"
-        }
+        raise HTTPException(status_code=400, detail="Unsupported file type")
 
     file_path = os.path.join(UPLOAD_FOLDER, file.filename)
 
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
 
-    return {
-        "filename": file.filename,
-        "status": "uploaded"
-    }
+        extracted_text = extract_text(file_path)
+
+        return {
+            "filename": file.filename,
+            "status": "uploaded",
+            "extracted_text": extracted_text
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
