@@ -1,7 +1,8 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 import os
 import shutil
-from app.services.file_parser import extract_text
+
+from app.services.resume_pipeline import process_resume
 
 router = APIRouter()
 
@@ -10,9 +11,11 @@ ALLOWED_EXTENSIONS = {".pdf", ".docx", ".jpg", ".jpeg", ".png"}
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+
 def is_allowed_file(filename: str) -> bool:
     _, ext = os.path.splitext(filename.lower())
     return ext in ALLOWED_EXTENSIONS
+
 
 @router.post("/upload-resume")
 def upload_resume(file: UploadFile = File(...)):
@@ -25,12 +28,12 @@ def upload_resume(file: UploadFile = File(...)):
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        extracted_text = extract_text(file_path)
+        result = process_resume(file_path, file.filename)
 
         return {
             "filename": file.filename,
             "status": "uploaded",
-            "extracted_text": extracted_text
+            "structured_data": result["structured_data"]
         }
 
     except Exception as e:
