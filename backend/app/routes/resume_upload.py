@@ -25,16 +25,23 @@ def upload_resume(file: UploadFile = File(...)):
     file_path = os.path.join(UPLOAD_FOLDER, file.filename)
 
     try:
+        print("ROUTE: request received")
+
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
+        print("ROUTE: file saved")
 
         result = process_resume(file_path, file.filename)
+        print("ROUTE: pipeline finished")
 
         return {
-            "filename": file.filename,
-            "status": "uploaded",
-            "structured_data": result["structured_data"]
-        }
+    "filename": file.filename,
+    "status": "uploaded",
+    "raw_text": result["raw_text"],
+    "cleaned_text": result["cleaned_text"],
+    "structured_data": result["structured_data"]
+}
 
     except Exception as e:
+        print("ROUTE ERROR:", str(e))
         raise HTTPException(status_code=500, detail=str(e))

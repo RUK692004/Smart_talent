@@ -1,11 +1,11 @@
 import os
 from typing import List
-
+import re
 import pdfplumber
 import pytesseract
 from docx import Document
 from PIL import Image
-
+from app.preprocess.image_preprocessor import preprocess_image_for_ocr
 
 # ---------- Configuration ----------
 TESSERACT_PATH = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
@@ -110,17 +110,72 @@ def extract_text_from_docx(file_path: str) -> str:
     except Exception as e:
         raise Exception(f"DOCX extraction failed: {str(e)}")
 
+# ---------- PSM6 / PSM11 ----------
+def choose_best_ocr(text1: str, text2: str) -> str:
+    """
+    Choose the better OCR result based on simple heuristics.
+    """
+
+    def score(text: str) -> int:
+        score = 0
+
+        # Reward presence of email
+        if re.search(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.", text):
+            score += 5
+
+        # Reward phone-like numbers
+        if re.search(r"\d{10}", text):
+            score += 3
+
+        # Reward known section headings
+        keywords = [
+            "experience", "education", "skills",
+            "projects", "profile", "summary"
+        ]
+
+        for kw in keywords:
+            if kw in text.lower():
+                score += 2
+
+        # Penalize too much garbage characters
+        garbage = len(re.findall(r"[^a-zA-Z0-9\s.,\-@]", text))
+        score -= garbage // 50
+
+        return score
+
+    score1 = score(text1)
+    score2 = score(text2)
+
+    print(f"OCR SCORE psm6: {score1}")
+    print(f"OCR SCORE psm11: {score2}")
+
+    return text1 if score1 >= score2 else text2 
 
 # ---------- Image Extraction ----------
 def extract_text_from_image(file_path: str) -> str:
     """
-    Extract text from image files using OCR.
+    Run OCR with multiple PSM modes and choose the best result.
     """
     try:
-        image = Image.open(file_path)
-        text = pytesseract.image_to_string(image)
+        print("FILE_PARSER: preprocessing image")
+        processed_image = preprocess_image_for_ocr(file_path)
 
-        final_text = text.strip()
+        print("FILE_PARSER: running OCR (psm 6)")
+        text_psm6 = pytesseract.image_to_string(
+            processed_image,
+            config='--oem 3 --psm 6'
+        )
+
+        print("FILE_PARSER: running OCR (psm 11)")
+        text_psm11 = pytesseract.image_to_string(
+            processed_image,
+            config='--oem 3 --psm 11'
+        )
+
+        # Choose better result
+        best_text = choose_best_ocr(text_psm6, text_psm11)
+
+        final_text = best_text.strip()
 
         if not final_text:
             raise Exception("No readable text found in image.")
@@ -128,4 +183,4 @@ def extract_text_from_image(file_path: str) -> str:
         return final_text
 
     except Exception as e:
-        raise Exception(f"Image OCR extraction failed: {str(e)}")
+        raise Exception(f"OCR failed: {str(e)}")
