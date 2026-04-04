@@ -22,6 +22,8 @@ SECTION_ALIASES = {
     ],
     "skills": [
         "skills",
+        "skills interests",
+        "skills & interests",
         "technical skills",
         "core skills",
         "key competencies",
@@ -76,7 +78,6 @@ SECTION_ALIASES = {
     ],
     "hobbies": [
         "hobbies",
-        "interests",
         "personal interests"
     ],
     "references": [
@@ -115,17 +116,39 @@ def is_heading_like(line: str) -> bool:
 def match_section_heading(line: str) -> Optional[str]:
     normalized_line = normalize_heading(line)
 
+    # Hard-coded exact fixes first
+    if normalized_line in ["skills interests", "skills and interests"]:
+        return "skills"
+
+    if normalized_line in ["education certifications", "education and certifications"]:
+        return "education"
+
+    # Exact match first
+    for standard_section, aliases in SECTION_ALIASES.items():
+        for alias in aliases:
+            normalized_alias = normalize_heading(alias)
+            if normalized_line == normalized_alias:
+                return standard_section
+
+    # Special strict handling for hobbies:
+    # do not treat "Hobbies: Music, Movies" as only a heading without preserving content
+    if normalized_line.startswith("hobbies"):
+        return "hobbies"
+
+    # Loose match later, choose longest alias
+    best_match = None
+    best_len = 0
+
     for standard_section, aliases in SECTION_ALIASES.items():
         for alias in aliases:
             normalized_alias = normalize_heading(alias)
 
-            if normalized_line == normalized_alias:
-                return standard_section
-
             if normalized_alias in normalized_line and is_heading_like(line):
-                return standard_section
+                if len(normalized_alias) > best_len:
+                    best_match = standard_section
+                    best_len = len(normalized_alias)
 
-    return None
+    return best_match
 
 
 def find_all_headings_in_line(line: str) -> List[str]:
@@ -165,7 +188,7 @@ def split_into_sections(text: str) -> Dict[str, str]:
     Handles:
     - normal single headings
     - OCR-loose heading matches
-    - merged heading lines containing multiple headings
+    - inline heading content like 'Hobbies: Music, Movies'
     """
     lines = [line.strip() for line in text.split("\n") if line.strip()]
 
@@ -173,25 +196,26 @@ def split_into_sections(text: str) -> Dict[str, str]:
     current_section = "header"
 
     for line in lines:
-        # First check if line contains multiple headings merged together
-        matched_sections = find_all_headings_in_line(line)
-
-        if len(matched_sections) > 1 and is_heading_like(line):
-            # create empty sections for all detected headings
-            for sec in matched_sections:
-                sections.setdefault(sec, [])
-            # continue with the last heading as active section
-            current_section = matched_sections[-1]
-            continue
-
-        # Normal single-heading detection
         matched_section = match_section_heading(line)
 
         if matched_section:
             current_section = matched_section
             sections.setdefault(current_section, [])
-        else:
-            sections.setdefault(current_section, []).append(line)
+
+            normalized_line = normalize_heading(line)
+
+            # Preserve inline content after headings like "Hobbies: Music, Movies"
+            if ":" in line:
+                head, tail = line.split(":", 1)
+                if normalize_heading(head) in [
+                    "hobbies", "technical skills", "soft skills", "skills", "interests"
+                ]:
+                    tail = tail.strip()
+                    if tail:
+                        sections[current_section].append(f"{head.strip()}: {tail}")
+            continue
+
+        sections.setdefault(current_section, []).append(line)
 
     return {
         section: "\n".join(content).strip()

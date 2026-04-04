@@ -88,9 +88,6 @@ def extract_profile(sections: Dict[str, str]) -> str:
 
 
 def extract_skills(text: str, sections: Dict[str, str]) -> List[str]:
-    """
-    Works for both tech resumes and business/soft-skill resumes.
-    """
     skills_text = sections.get("skills", "")
     if not skills_text:
         return []
@@ -98,37 +95,27 @@ def extract_skills(text: str, sections: Dict[str, str]) -> List[str]:
     items = []
 
     for line in skills_text.split("\n"):
-        cleaned = line.strip("•*- ").strip()
+        cleaned = line.strip("•*-e= ").strip()
         if not cleaned:
             continue
 
-        # split by commas
-        comma_parts = [part.strip() for part in cleaned.split(",") if part.strip()]
+        if ":" in cleaned:
+            label, value = cleaned.split(":", 1)
+            label = label.lower().strip()
 
-        if len(comma_parts) > 1:
-            items.extend(comma_parts)
-            continue
+            if label in ["technical skills", "soft skills", "skills", "interests"]:
+                cleaned = value.strip()
 
-        # split by multiple spaces
-        space_parts = [part.strip() for part in re.split(r"\s{2,}", cleaned) if part.strip()]
-        if len(space_parts) > 1:
-            items.extend(space_parts)
-            continue
-
-        # fallback: if OCR flattened columns into one line, split on long phrases heuristically
-        phrase_parts = [part.strip() for part in re.split(r"\s{3,}", cleaned) if part.strip()]
-        if len(phrase_parts) > 1:
-            items.extend(phrase_parts)
-        else:
-            items.append(cleaned)
+        parts = [part.strip() for part in cleaned.split(",") if part.strip()]
+        items.extend(parts)
 
     unique_items = []
     seen = set()
 
     for item in items:
-        normalized = item.lower().strip()
-        if normalized and normalized not in seen:
-            seen.add(normalized)
+        norm = item.lower()
+        if norm not in seen:
+            seen.add(norm)
             unique_items.append(item)
 
     return unique_items
@@ -141,104 +128,168 @@ def extract_languages(sections: Dict[str, str]) -> List[str]:
 
 def extract_education(sections: Dict[str, str]) -> List[str]:
     text = sections.get("education", "")
-    activities_text = sections.get("activities", "")
+    if not text:
+        return []
 
-    lines = [line.strip("•*- ").strip() for line in text.split("\n") if line.strip()]
+    lines = [line.strip("•*-e= ").strip() for line in text.split("\n") if line.strip()]
 
-    # fallback: if education is empty, try recovering from mixed activities block
-    if not lines and activities_text:
-        lines = [line.strip("•*- ").strip() for line in activities_text.split("\n") if line.strip()]
-
-    education_items = []
+    entries = []
+    current = []
 
     education_keywords = [
-        "university", "college", "school", "institute", "academy",
-        "b.tech", "bachelor", "master", "degree", "major", "majors", "diploma"
-    ]
-
-    non_education_keywords = [
-        "volunteer", "activity", "community", "short course", "certificate", "certification"
+        "college", "university", "school", "engineering", "b.tech",
+        "state", "12th", "10th", "ktu"
     ]
 
     for line in lines:
         lower = line.lower()
 
-        if any(keyword in lower for keyword in non_education_keywords):
-            continue
+        # Start a new education entry when a school/college line appears
+        if any(keyword in lower for keyword in ["college", "university", "school", "engineering"]):
+            if current:
+                entries.append(" ".join(current).strip())
+                current = []
+            current.append(line)
+        else:
+            current.append(line)
 
-        if any(keyword in lower for keyword in education_keywords):
-            education_items.append(line)
+    if current:
+        entries.append(" ".join(current).strip())
 
-    return education_items
+    # remove duplicates
+    unique_entries = []
+    seen = set()
+    for entry in entries:
+        norm = entry.lower()
+        if norm not in seen:
+            seen.add(norm)
+            unique_entries.append(entry)
+
+    return unique_entries
 
 
 def extract_certifications(sections: Dict[str, str]) -> List[str]:
-    texts = [
-        sections.get("certifications", ""),
-        sections.get("education", ""),
-        sections.get("activities", "")
-    ]
+    """
+    Extract certification/course items.
 
-    cert_keywords = ["certificate", "certification", "course", "training", "program"]
+    Rule:
+    1. If content already exists inside the certifications section,
+       keep it directly.
+    2. Also recover certification-like lines from education/activities
+       when OCR or parsing mixes sections.
+    """
+    cert_text = sections.get("certifications", "")
+    education_text = sections.get("education", "")
+    activities_text = sections.get("activities", "")
 
     items = []
 
-    for text in texts:
-        for line in text.split("\n"):
-            cleaned = line.strip("•*- ").strip()
-            if not cleaned:
-                continue
-
-            lower = cleaned.lower()
-
-            # detect keywords OR numeric course pattern (like 3-day)
-            if (
-                any(k in lower for k in cert_keywords)
-                or re.search(r"\d+\s*[- ]?day", lower)
-            ):
+    # 1. Keep everything from the certifications section
+    if cert_text:
+        for line in cert_text.split("\n"):
+            cleaned = line.strip("•*-e= ").strip()
+            if cleaned:
                 items.append(cleaned)
 
-    # remove duplicates
-    return list(dict.fromkeys(items))
+    # 2. Recover certification-like lines from other sections if mixed
+    extra_candidates = []
+    for source_text in [education_text, activities_text]:
+        for line in source_text.split("\n"):
+            cleaned = line.strip("•*-e= ").strip()
+            if cleaned:
+                extra_candidates.append(cleaned)
+
+    cert_keywords = [
+        "certificate",
+        "certification",
+        "course",
+        "training",
+        "program",
+        "workshop",
+        "hackathon",
+        "bootcamp",
+        "seminar"
+    ]
+
+    for line in extra_candidates:
+        lower = line.lower()
+        if any(keyword in lower for keyword in cert_keywords) or re.search(r"\d+\s*[- ]?hour", lower):
+            items.append(line)
+
+    # Remove duplicates while preserving order
+    unique_items = []
+    seen = set()
+
+    for item in items:
+        norm = item.lower()
+        if norm not in seen:
+            seen.add(norm)
+            unique_items.append(item)
+
+    return unique_items
 
 def extract_activities(sections: Dict[str, str]) -> List[str]:
+    """
+    Keep activity lines, but do not include the hobbies line.
+    """
     activities_text = sections.get("activities", "")
     if not activities_text:
         return []
 
-    lines = [line.strip("•*- ").strip() for line in activities_text.split("\n") if line.strip()]
+    items = []
 
-    activity_keywords = ["volunteer", "community", "club", "activity", "extracurricular"]
+    for line in activities_text.split("\n"):
+        cleaned = line.strip("•*-e= ").strip()
+        if not cleaned:
+            continue
 
-    activity_items = []
-    for line in lines:
-        lower = line.lower()
-        if any(keyword in lower for keyword in activity_keywords):
-            activity_items.append(line)
+        # skip hobbies line here, hobbies extractor will handle it
+        if cleaned.lower().startswith("hobbies:"):
+            continue
+
+        items.append(cleaned)
 
     # remove duplicates
-    cleaned_items = []
+    unique_items = []
     seen = set()
-    for item in activity_items:
-        normalized = item.lower().strip()
-        if normalized and normalized not in seen:
-            seen.add(normalized)
-            cleaned_items.append(item)
 
-    return cleaned_items
+    for item in items:
+        norm = item.lower()
+        if norm not in seen:
+            seen.add(norm)
+            unique_items.append(item)
+
+    return unique_items
+
 
 
 def extract_hobbies(sections: Dict[str, str]) -> List[str]:
     hobbies_text = sections.get("hobbies", "")
     activities_text = sections.get("activities", "")
 
+    # Dedicated hobbies section
     if hobbies_text:
-        return [line.strip("•*- ").strip() for line in hobbies_text.split("\n") if line.strip()]
+        for line in hobbies_text.split("\n"):
+            cleaned = line.strip("•*-e= ").strip()
+            if "hobbies" in cleaned.lower():
+                if ":" in cleaned:
+                    hobby_text = cleaned.split(":", 1)[1].strip()
+                else:
+                    hobby_text = cleaned.lower().replace("hobbies", "").strip()
+                return [h.strip() for h in hobby_text.split(",") if h.strip()]
 
+        # fallback: if hobbies section contains plain items
+        items = [line.strip("•*-e= ").strip() for line in hobbies_text.split("\n") if line.strip()]
+        return items
+
+    # Fallback from activities section
     for line in activities_text.split("\n"):
-        cleaned = line.strip("•*- ").strip()
-        if cleaned.lower().startswith("hobbies:"):
-            hobby_text = cleaned.split(":", 1)[1].strip()
+        cleaned = line.strip("•*-e= ").strip()
+        if "hobbies" in cleaned.lower():
+            if ":" in cleaned:
+                hobby_text = cleaned.split(":", 1)[1].strip()
+            else:
+                hobby_text = cleaned.lower().replace("hobbies", "").strip()
             return [h.strip() for h in hobby_text.split(",") if h.strip()]
 
     return []
@@ -433,6 +484,7 @@ def extract_resume_data(text: str) -> dict:
     sections = split_into_sections(cleaned_text)
 
     return {
+        "sections_debug": sections,
         "name": extract_name(cleaned_text),
         "email": extract_email(cleaned_text),
         "phone": extract_phone(cleaned_text),
