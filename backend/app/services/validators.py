@@ -47,6 +47,30 @@ def _clean_string_list(items: Any) -> List[str]:
     return cleaned_items
 
 
+def _clean_skill_categories(categories: Any) -> Dict[str, List[str]]:
+    """
+    Ensures skill_categories is a dictionary where:
+    key = non-empty string category
+    value = clean list of non-empty unique strings
+    """
+    if not isinstance(categories, dict):
+        return {}
+
+    cleaned_categories = {}
+
+    for key, value in categories.items():
+        if not isinstance(key, str):
+            continue
+
+        category = key.strip()
+        if not category:
+            continue
+
+        cleaned_categories[category] = _clean_string_list(value)
+
+    return cleaned_categories
+
+
 def _ensure_list_of_dicts(items: Any, required_keys: List[str]) -> List[Dict[str, Any]]:
     """
     Ensures items is a list of dictionaries and fills missing keys
@@ -108,6 +132,9 @@ def validate_resume_data(data: Dict[str, Any]) -> Dict[str, Any]:
         "portfolio": "",
         "summary": "",
         "skills": [],
+        "normalized_skills": [],
+        "skill_categories": {},
+        "expanded_skills": [],
         "education": [],
         "projects": [],
         "experience": [],
@@ -131,6 +158,9 @@ def validate_resume_data(data: Dict[str, Any]) -> Dict[str, Any]:
     validated_data["raw_text"] = str(data.get("raw_text", "") or "").strip()
 
     validated_data["skills"] = _clean_string_list(data.get("skills", []))
+    validated_data["normalized_skills"] = _clean_string_list(data.get("normalized_skills", []))
+    validated_data["expanded_skills"] = _clean_string_list(data.get("expanded_skills", []))
+    validated_data["skill_categories"] = _clean_skill_categories(data.get("skill_categories", {}))
 
     validated_data["education"] = _ensure_list_of_dicts(
         data.get("education", []),

@@ -58,6 +58,8 @@ def process_resume(file_path: str, filename: str) -> Dict[str, Any]:
             structured_data["raw_text"] = cleaned_text
             print("PIPELINE: rule-based structured extraction completed")
 
+        print("AFTER EXTRACTION:", structured_data.keys())
+
         validation_result = validate_resume_data(structured_data)
 
         if validation_result.get("status") != "success":
@@ -71,6 +73,7 @@ def process_resume(file_path: str, filename: str) -> Dict[str, Any]:
             }
 
         print("PIPELINE: validation completed")
+        print("AFTER VALIDATION:", validation_result.get("structured_data", {}).keys())
 
         normalization_result = normalize_resume_data(
             validation_result.get("structured_data", {})
@@ -87,6 +90,7 @@ def process_resume(file_path: str, filename: str) -> Dict[str, Any]:
             }
 
         print("PIPELINE: normalization completed")
+        print("AFTER NORMALIZATION:", normalization_result.get("structured_data", {}).keys())
         print("PIPELINE: finished successfully")
 
         return {

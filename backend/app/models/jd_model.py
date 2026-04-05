@@ -1,15 +1,16 @@
 from pydantic import BaseModel
-from typing import Optional
-from datetime import datetime
+from typing import List, Optional, Dict, Any
 
 
 class JDCreate(BaseModel):
-    job_role: Optional[str] = None
-    description: str
+    title: str
+    description: Optional[str] = ""
+    skills: List[str] = []
+    experience_required: float = 0
+    keywords: List[str] = []
 
 
 class JDResponse(BaseModel):
     id: int
-    job_role: Optional[str] = None
-    description: str
-    uploaded_at: datetime
+    title: str
+    parsed_data: Dict[str, Any]

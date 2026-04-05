@@ -2,7 +2,11 @@ import re
 from typing import Dict, List, Optional, Any
 
 from app.parsers.section_detector import split_into_sections
-
+from app.services.skill_mapper import (
+    normalize_skill,
+    map_skills_to_category,
+    expand_related_skills
+)
 
 def clean_text(text: str) -> str:
     text = text.replace("\r", "\n")
@@ -148,7 +152,9 @@ def extract_skills(sections: Dict[str, str]) -> List[str]:
     items = []
 
     for line in skills_text.split("\n"):
-        cleaned = line.strip("•*-e= ").strip()
+        cleaned = line.strip()
+        cleaned = cleaned.lstrip("•*-=").strip()
+
         if not cleaned:
             continue
 
@@ -172,6 +178,27 @@ def extract_skills(sections: Dict[str, str]) -> List[str]:
 
     return unique_items
 
+def process_skills(sections: Dict[str, str]) -> Dict[str, object]:
+    raw_skills = extract_skills(sections)
+
+    normalized_skills = []
+    seen_normalized = set()
+
+    for skill in raw_skills:
+        normalized = normalize_skill(skill)
+        if normalized and normalized not in seen_normalized:
+            seen_normalized.add(normalized)
+            normalized_skills.append(normalized)
+
+    categorized_skills = map_skills_to_category(normalized_skills)
+    expanded_skills = expand_related_skills(normalized_skills)
+
+    return {
+        "raw_skills": raw_skills,
+        "normalized_skills": normalized_skills,
+        "skill_categories": categorized_skills,
+        "expanded_skills": expanded_skills
+    }
 
 def extract_education(sections: Dict[str, str]) -> List[Dict[str, Any]]:
     text = sections.get("education", "")
@@ -193,22 +220,37 @@ def extract_education(sections: Dict[str, str]) -> List[Dict[str, Any]]:
         cgpa = ""
         percentage = ""
 
+        # year extraction
         year_match = re.search(r"(19|20)\d{2}", line1)
         if year_match:
             year = year_match.group(0)
 
-        percentage_match = re.search(r"(\d{1,3})\s*%", line1)
+        # percentage extraction: supports 99% and 99.9%
+        percentage_match = re.search(r"(\d{1,3}(?:\.\d+)?)\s*%", line1)
         if percentage_match:
             percentage = percentage_match.group(1) + "%"
 
+        # CGPA extraction
         cgpa_match = re.search(r"\b\d\.\d{1,2}\b", line1)
         if cgpa_match and not percentage:
             cgpa = cgpa_match.group(0)
         elif cgpa_match and "%" not in line1:
             cgpa = cgpa_match.group(0)
 
-        institution = re.sub(r"\d{1,3}\s*%\s*\|\s*(19|20)\d{2}", "", line1).strip()
-        institution = re.sub(r"\b\d\.\d{1,2}\b\s*\|\s*(19|20)\d{2}", "", institution).strip()
+        # remove percentage + year from institution
+        institution = re.sub(
+            r"\d{1,3}(?:\.\d+)?\s*%\s*\|\s*(19|20)\d{2}",
+            "",
+            line1
+        ).strip()
+
+        # remove cgpa + year from institution
+        institution = re.sub(
+            r"\b\d\.\d{1,2}\b\s*\|\s*(19|20)\d{2}",
+            "",
+            institution
+        ).strip()
+
         institution = re.sub(r"\s+", " ", institution).strip()
 
         if line2:
@@ -469,6 +511,7 @@ def extract_resume_data(text: str) -> dict:
     sections = split_into_sections(cleaned_text)
     links = extract_links(cleaned_text)
     header_info = extract_header_info(cleaned_text)
+    skill_data = process_skills(sections)
 
     return {
         "name": header_info["name"],
@@ -479,7 +522,10 @@ def extract_resume_data(text: str) -> dict:
         "github": links["github"],
         "portfolio": links["portfolio"],
         "summary": extract_summary(sections),
-        "skills": extract_skills(sections),
+        "skills": skill_data["raw_skills"],
+        "normalized_skills": skill_data["normalized_skills"],
+        "skill_categories": skill_data["skill_categories"],
+        "expanded_skills": skill_data["expanded_skills"],
         "education": extract_education(sections),
         "projects": extract_projects(sections),
         "experience": extract_experience(sections),

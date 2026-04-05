@@ -69,6 +69,28 @@ def _normalize_skills(skills: List[str]) -> List[str]:
     return _deduplicate_list(cleaned_skills)
 
 
+def _normalize_skill_categories(categories: Dict[str, Any]) -> Dict[str, List[str]]:
+    """
+    Normalizes skill category mapping.
+    """
+    if not isinstance(categories, dict):
+        return {}
+
+    normalized_categories = {}
+
+    for category, skills in categories.items():
+        category_name = _normalize_text(category)
+        if not category_name:
+            continue
+
+        if not isinstance(skills, list):
+            normalized_categories[category_name] = []
+        else:
+            normalized_categories[category_name] = _normalize_skills(skills)
+
+    return normalized_categories
+
+
 def _normalize_education(education_list: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     normalized = []
 
@@ -117,6 +139,7 @@ def _normalize_experience(experience_list: List[Dict[str, Any]]) -> List[Dict[st
 
     return normalized
 
+
 def _normalize_certification_title(title: str) -> str:
     title = _normalize_text(title)
     prefixes = ["Participated in the ", "Participated in ", "Attended ", "Completed "]
@@ -126,6 +149,7 @@ def _normalize_certification_title(title: str) -> str:
             return title[len(prefix):].strip()
 
     return title
+
 
 def _normalize_certifications(certification_list: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     normalized = []
@@ -145,13 +169,6 @@ def _normalize_certifications(certification_list: List[Dict[str, Any]]) -> List[
 def normalize_resume_data(data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Normalizes validated resume data into a consistent format.
-
-    Returns:
-        {
-            "status": "success",
-            "message": "...",
-            "structured_data": {...}
-        }
     """
     if not isinstance(data, dict):
         return {
@@ -170,6 +187,9 @@ def normalize_resume_data(data: Dict[str, Any]) -> Dict[str, Any]:
         "portfolio": _normalize_url(_normalize_text(data.get("portfolio", ""))),
         "summary": _normalize_text(data.get("summary", "")),
         "skills": _normalize_skills(data.get("skills", [])),
+        "normalized_skills": _normalize_skills(data.get("normalized_skills", [])),
+        "skill_categories": _normalize_skill_categories(data.get("skill_categories", {})),
+        "expanded_skills": _normalize_skills(data.get("expanded_skills", [])),
         "education": _normalize_education(data.get("education", [])),
         "projects": _normalize_projects(data.get("projects", [])),
         "experience": _normalize_experience(data.get("experience", [])),
