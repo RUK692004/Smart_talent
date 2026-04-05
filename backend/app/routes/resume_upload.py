@@ -26,22 +26,33 @@ def upload_resume(file: UploadFile = File(...)):
 
     try:
         print("ROUTE: request received")
+        print(f"ROUTE: filename = {file.filename}")
+        print(f"ROUTE: file size = {file.size if hasattr(file, 'size') else 'unknown'}")
 
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
         print("ROUTE: file saved")
+        print(f"ROUTE: file path = {file_path}")
 
         result = process_resume(file_path, file.filename)
         print("ROUTE: pipeline finished")
 
         return {
-    "filename": file.filename,
-    "status": "uploaded",
-    "raw_text": result["raw_text"],
-    "cleaned_text": result["cleaned_text"],
-    "structured_data": result["structured_data"]
-}
+            "filename": file.filename,
+            "status": "uploaded",
+            "raw_text": result["raw_text"],
+            "cleaned_text": result["cleaned_text"],
+            "structured_data": result["structured_data"],
+            "debug_info": {
+                "extraction_method": result.get("extraction_method"),
+                "message": result.get("message", ""),
+                "status": result.get("status", ""),
+                "file_path": file_path
+            }
+        }
 
     except Exception as e:
         print("ROUTE ERROR:", str(e))
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))

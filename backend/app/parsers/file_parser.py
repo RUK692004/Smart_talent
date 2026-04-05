@@ -6,7 +6,8 @@ import pytesseract
 from docx import Document
 from PIL import Image
 from app.preprocess.image_preprocessor import preprocess_image_for_ocr
-
+import tempfile
+from docx2pdf import convert
 # ---------- Configuration ----------
 TESSERACT_PATH = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
@@ -21,30 +22,16 @@ def join_non_empty(lines: List[str]) -> str:
 
 # ---------- Main Entry ----------
 def extract_text(file_path: str) -> str:
-    """
-    Detect file type and extract text using the appropriate method.
-    """
-    try:
-        _, ext = os.path.splitext(file_path.lower())
-        print(f"FILE_PARSER: detected extension = {ext}")
+    _, ext = os.path.splitext(file_path.lower())
 
-        if ext == ".pdf":
-            print("FILE_PARSER: using PDF text extraction")
-            return extract_text_from_pdf(file_path)
-
-        elif ext == ".docx":
-            print("FILE_PARSER: using DOCX direct extraction")
-            return extract_text_from_docx(file_path)
-
-        elif ext in SUPPORTED_IMAGE_EXTENSIONS:
-            print("FILE_PARSER: using image OCR extraction")
-            return extract_text_from_image(file_path)
-
-        else:
-            raise ValueError(f"Unsupported file format: {ext}")
-
-    except Exception as e:
-        raise Exception(f"Error processing file '{file_path}': {str(e)}")
+    if ext == ".pdf":
+        return extract_text_from_pdf(file_path)
+    elif ext == ".docx":
+        return extract_text_from_docx(file_path)
+    elif ext in [".jpg", ".jpeg", ".png"]:
+        return extract_text_from_image(file_path)
+    else:
+        raise ValueError(f"Unsupported file format: {ext}")
 
 
 # ---------- PDF Extraction ----------
@@ -75,40 +62,26 @@ def extract_text_from_pdf(file_path: str) -> str:
 
 
 # ---------- DOCX Extraction ----------
+import os
+import tempfile
+from docx2pdf import convert
+
+
 def extract_text_from_docx(file_path: str) -> str:
     """
-    Extract text directly from DOCX files.
+    Convert DOCX to PDF, then use PDF extraction.
+    This is more reliable for resumes with complex layouts.
     """
     try:
-        doc = Document(file_path)
-        extracted_lines = []
+        with tempfile.TemporaryDirectory() as temp_dir:
+            pdf_path = os.path.join(temp_dir, "converted_resume.pdf")
 
-        # Paragraphs
-        for para in doc.paragraphs:
-            if para.text.strip():
-                extracted_lines.append(para.text)
+            convert(file_path, pdf_path)
 
-        # Tables
-        for table in doc.tables:
-            for row in table.rows:
-                row_data = []
-                for cell in row.cells:
-                    cell_text = cell.text.strip()
-                    if cell_text:
-                        row_data.append(cell_text)
-
-                if row_data:
-                    extracted_lines.append(" | ".join(row_data))
-
-        final_text = join_non_empty(extracted_lines)
-
-        if not final_text:
-            raise Exception("No readable text found in DOCX.")
-
-        return final_text
+            return extract_text_from_pdf(pdf_path)
 
     except Exception as e:
-        raise Exception(f"DOCX extraction failed: {str(e)}")
+        raise Exception(f"DOCX to PDF conversion failed: {str(e)}")
 
 # ---------- PSM6 / PSM11 ----------
 def choose_best_ocr(text1: str, text2: str) -> str:

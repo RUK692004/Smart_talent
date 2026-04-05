@@ -82,7 +82,13 @@ SECTION_ALIASES = {
     ],
     "references": [
         "references",
-        "reference"
+        "reference",
+        "referees",
+        "referee",
+        "recommendations",
+        "recommendation",
+        "professional references",
+        "character references"
     ]
 }
 
