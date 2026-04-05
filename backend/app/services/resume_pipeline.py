@@ -47,7 +47,8 @@ def process_resume(file_path: str, filename: str) -> Dict[str, Any]:
             extraction_method = "ai"
             print("PIPELINE: AI structured extraction successful")
         else:
-            print("PIPELINE: AI extraction failed, using rule-based fallback")
+            print("PIPELINE: AI extraction failed")
+            print("PIPELINE: AI error message =", ai_result.get("message"))
             structured_data = extract_resume_data(cleaned_text)
             extraction_method = "rule_based"
 
