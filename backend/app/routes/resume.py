@@ -1,8 +1,11 @@
 from fastapi import APIRouter, HTTPException
 from app.db.database import get_connection
 import json
+import os
 
 router = APIRouter(prefix="/resumes", tags=["Resumes"])
+
+UPLOAD_FOLDER = "uploads"
 
 
 @router.get("/")
@@ -38,6 +41,85 @@ def get_all_resumes():
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching resumes: {str(e)}")
+
+    finally:
+        cur.close()
+        conn.close()
+
+
+@router.delete("/clear-all")
+def clear_all_resumes():
+    """
+    Delete all resumes and reset ID sequence.
+    """
+    conn = get_connection()
+    cur = conn.cursor()
+
+    try:
+        # collect filenames before truncating
+        cur.execute("SELECT filename FROM resumes")
+        rows = cur.fetchall()
+        filenames = [row[0] for row in rows]
+
+        # clear table and reset sequence
+        cur.execute("TRUNCATE TABLE resumes RESTART IDENTITY;")
+        conn.commit()
+
+        # delete uploaded files
+        for filename in filenames:
+            file_path = os.path.join(UPLOAD_FOLDER, filename)
+            if os.path.exists(file_path) and os.path.isfile(file_path):
+                os.remove(file_path)
+
+        return {
+            "message": "All resumes deleted successfully. ID sequence reset."
+        }
+
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Error clearing resumes: {str(e)}")
+
+    finally:
+        cur.close()
+        conn.close()
+
+
+@router.get("/{resume_id}/profile")
+def get_resume_profile(resume_id: int):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            SELECT filename, parsed_data
+            FROM resumes
+            WHERE id = %s
+        """, (resume_id,))
+        row = cur.fetchone()
+
+        if not row:
+            raise HTTPException(status_code=404, detail="Resume not found")
+
+        parsed_data = row[1]
+
+        if isinstance(parsed_data, str):
+            try:
+                parsed_data = json.loads(parsed_data)
+            except json.JSONDecodeError:
+                parsed_data = {"raw_parsed_data": parsed_data}
+
+        parsed_data.pop("raw_text", None)
+
+        return {
+            "resume_id": resume_id,
+            "filename": row[0],
+            "candidate_profile": parsed_data
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching candidate profile: {str(e)}")
 
     finally:
         cur.close()
@@ -106,6 +188,11 @@ def delete_resume(resume_id: int):
         cur.execute("DELETE FROM resumes WHERE id = %s", (resume_id,))
         conn.commit()
 
+        # delete file from uploads folder
+        file_path = os.path.join(UPLOAD_FOLDER, row[1])
+        if os.path.exists(file_path) and os.path.isfile(file_path):
+            os.remove(file_path)
+
         return {
             "message": "Resume deleted successfully",
             "deleted_resume": {
@@ -119,49 +206,6 @@ def delete_resume(resume_id: int):
     except Exception as e:
         conn.rollback()
         raise HTTPException(status_code=500, detail=f"Error deleting resume: {str(e)}")
-
-    finally:
-        cur.close()
-        conn.close()
-
-
-@router.get("/{resume_id}/profile")
-def get_resume_profile(resume_id: int):
-    conn = get_connection()
-    cur = conn.cursor()
-
-    try:
-        cur.execute("""
-            SELECT filename, parsed_data
-            FROM resumes
-            WHERE id = %s
-        """, (resume_id,))
-        row = cur.fetchone()
-
-        if not row:
-            raise HTTPException(status_code=404, detail="Resume not found")
-
-        parsed_data = row[1]
-
-        if isinstance(parsed_data, str):
-            try:
-                parsed_data = json.loads(parsed_data)
-            except json.JSONDecodeError:
-                parsed_data = {"raw_parsed_data": parsed_data}
-
-        # 🔥 REMOVE raw_text from profile response
-        parsed_data.pop("raw_text", None)
-
-        return {
-            "resume_id": resume_id,
-            "filename": row[0],
-            "candidate_profile": parsed_data
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching candidate profile: {str(e)}")
 
     finally:
         cur.close()

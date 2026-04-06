@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 import re
 
 
@@ -12,6 +12,7 @@ SECTION_ALIASES = {
         "career objective",
         "personal profile",
         "business management analysis",
+        "business management and analysis",
         "business management & analysis"
     ],
     "contact": [
@@ -92,10 +93,34 @@ SECTION_ALIASES = {
 
 def normalize_heading(text: str) -> str:
     text = text.strip().lower()
-    text = re.sub(r"[^a-z0-9\s&:/-]", " ", text)
     text = text.replace("&", " and ")
+    text = re.sub(r"[^a-z0-9\s:/-]", " ", text)
     text = re.sub(r"\s+", " ", text)
     return text.strip()
+
+
+def looks_like_data_line(line: str) -> bool:
+    """
+    Reject common non-heading lines:
+    emails, phone numbers, URLs, long descriptive lines, etc.
+    """
+    stripped = line.strip()
+    if not stripped:
+        return False
+
+    if len(stripped.split()) > 8:
+        return True
+
+    if "@" in stripped:
+        return True
+
+    if re.search(r"https?://|www\.|linkedin|github", stripped, re.IGNORECASE):
+        return True
+
+    if re.search(r"\+?\d[\d\s\-()]{7,}", stripped):
+        return True
+
+    return False
 
 
 def is_heading_like(line: str) -> bool:
@@ -104,31 +129,43 @@ def is_heading_like(line: str) -> bool:
     if not stripped:
         return False
 
-    if len(stripped.split()) > 8:
+    if looks_like_data_line(stripped):
+        return False
+
+    normalized = normalize_heading(stripped)
+    word_count = len(normalized.split())
+
+    if not (1 <= word_count <= 8):
         return False
 
     if stripped.isupper():
         return True
 
-    normalized = normalize_heading(stripped)
-    word_count = len(normalized.split())
+    title_case_ratio = sum(1 for word in stripped.split() if word[:1].isupper()) / max(len(stripped.split()), 1)
+    if title_case_ratio >= 0.6:
+        return True
 
-    return 1 <= word_count <= 8
+    return True
 
 
 def match_section_heading(line: str) -> Optional[str]:
     normalized_line = normalize_heading(line)
 
-    if normalized_line in ["skills interests", "skills and interests"]:
-        return "skills"
+    if not normalized_line:
+        return None
 
-    if normalized_line in ["education certifications", "education and certifications"]:
-        return "education"
+    special_cases = {
+        "skills interests": "skills",
+        "skills and interests": "skills",
+        "education certifications": "education",
+        "education and certifications": "education",
+    }
+    if normalized_line in special_cases:
+        return special_cases[normalized_line]
 
     for standard_section, aliases in SECTION_ALIASES.items():
         for alias in aliases:
-            normalized_alias = normalize_heading(alias)
-            if normalized_line == normalized_alias:
+            if normalized_line == normalize_heading(alias):
                 return standard_section
 
     if normalized_line.startswith("hobbies"):
@@ -141,7 +178,11 @@ def match_section_heading(line: str) -> Optional[str]:
         for alias in aliases:
             normalized_alias = normalize_heading(alias)
 
-            if normalized_alias in normalized_line and is_heading_like(line):
+            if (
+                normalized_alias
+                and normalized_alias in normalized_line
+                and is_heading_like(line)
+            ):
                 if len(normalized_alias) > best_len:
                     best_match = standard_section
                     best_len = len(normalized_alias)
@@ -151,7 +192,7 @@ def match_section_heading(line: str) -> Optional[str]:
 
 def find_all_headings_in_line(line: str) -> List[str]:
     """
-    Detect multiple headings appearing in one OCR line.
+    Detect multiple headings appearing in one OCR/PDF line.
     Example:
     'EDUCATION & CERTIFICATIONS EXTRACURRICULAR ACTIVITIES'
     -> ['education', 'certifications', 'activities']
@@ -177,7 +218,7 @@ def find_all_headings_in_line(line: str) -> List[str]:
     return unique_matches
 
 
-def split_inline_heading_content(line: str) -> Optional[tuple[str, str]]:
+def split_inline_heading_content(line: str) -> Optional[Tuple[str, str]]:
     """
     Handles lines like:
     'Skills: Python, Java'
@@ -192,6 +233,21 @@ def split_inline_heading_content(line: str) -> Optional[tuple[str, str]]:
 
     if matched:
         return matched, tail.strip()
+
+    return None
+
+
+def should_start_new_section(line: str) -> Optional[str]:
+    """
+    Decide whether the line is a section heading.
+    """
+    inline_match = split_inline_heading_content(line)
+    if inline_match:
+        return inline_match[0]
+
+    matched_section = match_section_heading(line)
+    if matched_section and is_heading_like(line):
+        return matched_section
 
     return None
 
@@ -224,7 +280,7 @@ def split_into_sections(text: str) -> Dict[str, str]:
             continue
 
         # 2. Exact / single heading match
-        matched_section = match_section_heading(line)
+        matched_section = should_start_new_section(line)
         if matched_section:
             current_section = matched_section
             sections.setdefault(current_section, [])
@@ -244,5 +300,5 @@ def split_into_sections(text: str) -> Dict[str, str]:
     return {
         section: "\n".join(content).strip()
         for section, content in sections.items()
-        if content
+        if content and "\n".join(content).strip()
     }

@@ -3,100 +3,157 @@ from typing import Dict, List, Set
 
 
 # ---------------------------------------------------
-# 1. Skill synonym normalization
+# 1. Synonym normalization map
 # ---------------------------------------------------
 SKILL_SYNONYMS: Dict[str, str] = {
-    # Frontend
+    # ---------------------------
+    # IT / Software
+    # ---------------------------
     "react.js": "react",
     "reactjs": "react",
     "nextjs": "next.js",
-    "front end": "frontend",
-    "front-end": "frontend",
-    "frontend development": "frontend",
-    "html5": "html",
-    "css3": "css",
-    "js": "javascript",
-    "ts": "typescript",
-
-    # Backend
+    "next js": "next.js",
     "nodejs": "node.js",
     "node js": "node.js",
     "expressjs": "express",
     "fast api": "fastapi",
-    "back end": "backend",
-    "back-end": "backend",
-    "backend development": "backend",
+    "springboot": "spring boot",
+    "html5": "html",
+    "css3": "css",
+    "js": "javascript",
+    "ts": "typescript",
     "rest api": "api",
     "restful api": "api",
+    "frontend development": "frontend",
+    "front end": "frontend",
+    "front-end": "frontend",
+    "backend development": "backend",
+    "back end": "backend",
+    "back-end": "backend",
 
-    # Databases
+    # ---------------------------
+    # Database / Cloud / DevOps
+    # ---------------------------
     "postgres": "postgresql",
     "postgre": "postgresql",
     "mongo": "mongodb",
     "dbms": "database management systems",
     "sql database": "sql",
+    "aws cloud": "aws",
+    "google cloud": "gcp",
+    "k8s": "kubernetes",
+    "docker container": "docker",
 
-    # AI / ML
+    # ---------------------------
+    # AI / Data
+    # ---------------------------
     "ml": "machine learning",
     "dl": "deep learning",
     "ai": "artificial intelligence",
     "nlp": "natural language processing",
-    "tensorflow framework": "tensorflow",
-    "computer vision": "computer vision",
+    "cv": "computer vision",
+    "powerbi": "power bi",
+    "ms excel": "excel",
+    "advanced ms excel": "advanced excel",
+    "excel reporting": "excel",
 
-    # Java ecosystem
-    "java virtual machine": "jvm",
-    "springboot": "spring boot",
-
-    # Cloud / DevOps
-    "docker container": "docker",
-    "k8s": "kubernetes",
-
-    # Mobile
-    "flutter sdk": "flutter",
-
+    # ---------------------------
     # Core CS
+    # ---------------------------
     "dsa": "data structures and algorithms",
     "oops": "object oriented programming",
     "oop": "object oriented programming",
     "os": "operating systems",
     "cn": "computer networks",
 
-    # Blockchain
-    "smart contract": "smart contracts",
-    "web 3": "web3",
+    # ---------------------------
+    # Management / Business
+    # ---------------------------
+    "project coordination": "project management",
+    "project planning": "project management",
+    "team handling": "team management",
+    "people handling": "people management",
+    "stakeholder coordination": "stakeholder management",
+    "client handling": "client management",
+    "business strategy": "strategic planning",
+    "ops": "operations",
+    "operations management": "operations",
+
+    # ---------------------------
+    # HR
+    # ---------------------------
+    "talent sourcing": "talent acquisition",
+    "hiring": "recruitment",
+    "staffing": "recruitment",
+    "employee hiring": "recruitment",
+
+    # ---------------------------
+    # Finance / Accounts
+    # ---------------------------
+    "financial reporting": "finance reporting",
+    "book keeping": "bookkeeping",
+    "tally erp": "tally",
+    "ms excel finance": "excel",
+    "accounting and finance": "accounting",
+
+    # ---------------------------
+    # Sales / Marketing
+    # ---------------------------
+    "digital marketing seo": "seo",
+    "search engine optimization": "seo",
+    "search engine marketing": "sem",
+    "social media marketing": "social media",
+    "customer relationship management": "crm",
+    "lead generation campaigns": "lead generation",
+
+    # ---------------------------
+    # Design
+    # ---------------------------
+    "ui ux": "ui/ux design",
+    "user interface design": "ui design",
+    "user experience design": "ux design",
+
+    # ---------------------------
+    # Office / General
+    # ---------------------------
+    "microsoft excel": "excel",
+    "microsoft word": "word",
+    "microsoft powerpoint": "powerpoint",
+    "presentation skill": "presentation skills",
+    "communication skill": "communication",
+    "analytical skill": "analytical thinking",
 }
 
 
 # ---------------------------------------------------
-# 2. Skill -> main category mapping
+# 2. Main category mapping
 # ---------------------------------------------------
 SKILL_CATEGORIES: Dict[str, str] = {
-    # Frontend
-    "react": "Frontend",
-    "next.js": "Frontend",
-    "javascript": "Frontend",
-    "typescript": "Frontend",
-    "html": "Frontend",
-    "css": "Frontend",
-    "bootstrap": "Frontend",
-    "tailwind": "Frontend",
-    "frontend": "Frontend",
-    "web development": "Frontend",
+    # ---------------------------
+    # Software / IT
+    # ---------------------------
+    "react": "Frontend Development",
+    "next.js": "Frontend Development",
+    "javascript": "Frontend Development",
+    "typescript": "Frontend Development",
+    "html": "Frontend Development",
+    "css": "Frontend Development",
+    "bootstrap": "Frontend Development",
+    "tailwind": "Frontend Development",
+    "frontend": "Frontend Development",
+    "web development": "Frontend Development",
 
-    # Backend
-    "python": "Backend",
-    "flask": "Backend",
-    "fastapi": "Backend",
-    "django": "Backend",
-    "node.js": "Backend",
-    "express": "Backend",
-    "java": "Backend",
-    "spring boot": "Backend",
-    "backend": "Backend",
-    "api": "Backend",
+    "python": "Backend Development",
+    "java": "Backend Development",
+    "node.js": "Backend Development",
+    "express": "Backend Development",
+    "fastapi": "Backend Development",
+    "flask": "Backend Development",
+    "django": "Backend Development",
+    "spring boot": "Backend Development",
+    "backend": "Backend Development",
+    "api": "Backend Development",
 
-    # Database
     "mysql": "Database",
     "postgresql": "Database",
     "mongodb": "Database",
@@ -104,50 +161,149 @@ SKILL_CATEGORIES: Dict[str, str] = {
     "sql": "Database",
     "database management systems": "Database",
 
-    # Machine Learning / AI
-    "pytorch": "Machine Learning",
-    "tensorflow": "Machine Learning",
-    "scikit-learn": "Machine Learning",
-    "machine learning": "Machine Learning",
-    "deep learning": "Machine Learning",
-    "artificial intelligence": "Machine Learning",
-    "natural language processing": "Machine Learning",
-    "computer vision": "Machine Learning",
+    "docker": "DevOps / Cloud",
+    "kubernetes": "DevOps / Cloud",
+    "aws": "DevOps / Cloud",
+    "azure": "DevOps / Cloud",
+    "gcp": "DevOps / Cloud",
+    "ci/cd": "DevOps / Cloud",
+    "linux": "DevOps / Cloud",
 
-    # Java ecosystem
-    "jvm": "Java Ecosystem",
-    "hibernate": "Java Ecosystem",
-    "maven": "Java Ecosystem",
-
-    # Mobile
     "flutter": "Mobile Development",
     "dart": "Mobile Development",
     "android": "Mobile Development",
+    "ios": "Mobile Development",
 
-    # DevOps / Cloud
-    "docker": "DevOps",
-    "kubernetes": "DevOps",
-    "aws": "Cloud",
-    "azure": "Cloud",
-    "gcp": "Cloud",
+    "pytorch": "AI / Machine Learning",
+    "tensorflow": "AI / Machine Learning",
+    "scikit-learn": "AI / Machine Learning",
+    "machine learning": "AI / Machine Learning",
+    "deep learning": "AI / Machine Learning",
+    "artificial intelligence": "AI / Machine Learning",
+    "natural language processing": "AI / Machine Learning",
+    "computer vision": "AI / Machine Learning",
 
-    # Blockchain
-    "solidity": "Blockchain",
-    "ethereum": "Blockchain",
-    "web3": "Blockchain",
-    "smart contracts": "Blockchain",
+    "power bi": "Data / Analytics",
+    "tableau": "Data / Analytics",
+    "excel": "Data / Analytics",
+    "advanced excel": "Data / Analytics",
+    "data analysis": "Data / Analytics",
+    "data visualization": "Data / Analytics",
+    "statistics": "Data / Analytics",
+    "business intelligence": "Data / Analytics",
 
-    # Programming Languages
+    # ---------------------------
+    # Programming / CS
+    # ---------------------------
     "c": "Programming Languages",
     "c++": "Programming Languages",
+    "programming": "Programming Languages",
 
-    # Computer Science Fundamentals
     "data structures and algorithms": "Computer Science Fundamentals",
     "object oriented programming": "Computer Science Fundamentals",
     "operating systems": "Computer Science Fundamentals",
     "computer networks": "Computer Science Fundamentals",
+    "dbms": "Computer Science Fundamentals",
 
+    # ---------------------------
+    # Management / Operations
+    # ---------------------------
+    "project management": "Management",
+    "team management": "Management",
+    "people management": "Management",
+    "stakeholder management": "Management",
+    "client management": "Management",
+    "strategic planning": "Management",
+    "business development": "Management",
+    "operations": "Management",
+    "operations management": "Management",
+    "vendor management": "Management",
+    "resource planning": "Management",
+
+    # ---------------------------
+    # Finance / Accounts
+    # ---------------------------
+    "accounting": "Finance / Accounts",
+    "bookkeeping": "Finance / Accounts",
+    "tally": "Finance / Accounts",
+    "financial analysis": "Finance / Accounts",
+    "budgeting": "Finance / Accounts",
+    "forecasting": "Finance / Accounts",
+    "cost analysis": "Finance / Accounts",
+    "finance reporting": "Finance / Accounts",
+    "taxation": "Finance / Accounts",
+    "auditing": "Finance / Accounts",
+    "payroll": "Finance / Accounts",
+
+    # ---------------------------
+    # HR / Recruitment
+    # ---------------------------
+    "recruitment": "HR / Recruitment",
+    "talent acquisition": "HR / Recruitment",
+    "onboarding": "HR / Recruitment",
+    "employee engagement": "HR / Recruitment",
+    "performance management": "HR / Recruitment",
+    "hr operations": "HR / Recruitment",
+    "sourcing": "HR / Recruitment",
+
+    # ---------------------------
+    # Sales / Marketing
+    # ---------------------------
+    "sales": "Sales / Marketing",
+    "marketing": "Sales / Marketing",
+    "digital marketing": "Sales / Marketing",
+    "seo": "Sales / Marketing",
+    "sem": "Sales / Marketing",
+    "social media": "Sales / Marketing",
+    "branding": "Sales / Marketing",
+    "lead generation": "Sales / Marketing",
+    "crm": "Sales / Marketing",
+    "market research": "Sales / Marketing",
+    "content marketing": "Sales / Marketing",
+
+    # ---------------------------
+    # Design
+    # ---------------------------
+    "ui/ux design": "Design",
+    "ui design": "Design",
+    "ux design": "Design",
+    "figma": "Design",
+    "adobe xd": "Design",
+    "photoshop": "Design",
+    "illustrator": "Design",
+    "graphic design": "Design",
+
+    # ---------------------------
+    # Customer / Support
+    # ---------------------------
+    "customer service": "Customer Support",
+    "customer support": "Customer Support",
+    "technical support": "Customer Support",
+    "issue resolution": "Customer Support",
+    "ticket handling": "Customer Support",
+
+    # ---------------------------
+    # Supply Chain / Logistics
+    # ---------------------------
+    "inventory management": "Supply Chain / Logistics",
+    "supply chain management": "Supply Chain / Logistics",
+    "logistics": "Supply Chain / Logistics",
+    "warehouse management": "Supply Chain / Logistics",
+    "procurement": "Supply Chain / Logistics",
+
+    # ---------------------------
+    # Office / Business Tools
+    # ---------------------------
+    "word": "Office Tools",
+    "powerpoint": "Office Tools",
+    "outlook": "Office Tools",
+    "sap": "Office Tools",
+    "erp": "Office Tools",
+    "crm software": "Office Tools",
+
+    # ---------------------------
     # Soft Skills
+    # ---------------------------
     "teamwork": "Soft Skills",
     "adaptability": "Soft Skills",
     "critical thinking": "Soft Skills",
@@ -157,41 +313,49 @@ SKILL_CATEGORIES: Dict[str, str] = {
     "communication": "Soft Skills",
     "leadership": "Soft Skills",
     "time management": "Soft Skills",
-    "collaboration": "Soft Skills",
+    "decision making": "Soft Skills",
+    "analytical thinking": "Soft Skills",
+    "presentation skills": "Soft Skills",
+    "negotiation": "Soft Skills",
+    "interpersonal skills": "Soft Skills",
 }
 
 
 # ---------------------------------------------------
-# 3. Related skills expansion
+# 3. Related skill expansion
 # ---------------------------------------------------
 RELATED_SKILLS: Dict[str, List[str]] = {
-    # Frontend
+    # IT / Frontend
     "react": ["javascript", "frontend", "web development"],
     "next.js": ["react", "javascript", "frontend"],
     "html": ["frontend", "web development"],
     "css": ["frontend", "web development"],
     "javascript": ["frontend", "web development"],
     "typescript": ["javascript", "frontend"],
-    "frontend": ["web development"],
 
-    # Backend
+    # IT / Backend
+    "python": ["backend", "programming"],
+    "java": ["backend", "programming"],
+    "node.js": ["javascript", "backend", "api"],
+    "express": ["node.js", "backend", "api"],
     "fastapi": ["python", "backend", "api"],
     "flask": ["python", "backend", "api"],
     "django": ["python", "backend", "web development"],
-    "node.js": ["javascript", "backend", "api"],
-    "express": ["node.js", "backend", "api"],
     "spring boot": ["java", "backend", "api"],
-    "python": ["backend", "programming"],
-    "java": ["backend", "programming"],
     "api": ["backend"],
 
-    # Databases
-    "postgresql": ["sql", "database"],
+    # Database / Cloud
     "mysql": ["sql", "database"],
+    "postgresql": ["sql", "database"],
     "mongodb": ["nosql", "database"],
     "sql": ["database"],
+    "docker": ["devops", "containers"],
+    "kubernetes": ["devops", "containers"],
+    "aws": ["cloud"],
+    "azure": ["cloud"],
+    "gcp": ["cloud"],
 
-    # AI / ML
+    # AI / Data
     "pytorch": ["python", "machine learning", "deep learning"],
     "tensorflow": ["python", "machine learning", "deep learning"],
     "scikit-learn": ["python", "machine learning"],
@@ -200,29 +364,10 @@ RELATED_SKILLS: Dict[str, List[str]] = {
     "artificial intelligence": ["machine learning"],
     "natural language processing": ["machine learning", "artificial intelligence"],
     "computer vision": ["machine learning", "artificial intelligence"],
-
-    # Java ecosystem
-    "jvm": ["java", "java ecosystem"],
-    "hibernate": ["java", "java ecosystem"],
-    "maven": ["java", "java ecosystem"],
-
-    # Mobile
-    "flutter": ["dart", "mobile development"],
-    "dart": ["flutter", "mobile development"],
-    "android": ["mobile development"],
-
-    # DevOps / Cloud
-    "docker": ["devops", "containers"],
-    "kubernetes": ["devops", "containers"],
-    "aws": ["cloud"],
-    "azure": ["cloud"],
-    "gcp": ["cloud"],
-
-    # Blockchain
-    "solidity": ["ethereum", "blockchain", "smart contracts"],
-    "ethereum": ["blockchain", "smart contracts"],
-    "web3": ["blockchain"],
-    "smart contracts": ["blockchain", "ethereum"],
+    "power bi": ["data analysis", "data visualization", "business intelligence"],
+    "tableau": ["data visualization", "business intelligence"],
+    "excel": ["reporting", "data analysis"],
+    "advanced excel": ["excel", "reporting", "data analysis"],
 
     # Core CS
     "c": ["programming"],
@@ -232,6 +377,57 @@ RELATED_SKILLS: Dict[str, List[str]] = {
     "operating systems": ["computer science fundamentals"],
     "computer networks": ["computer science fundamentals"],
 
+    # Management
+    "project management": ["planning", "coordination", "management"],
+    "team management": ["leadership", "management"],
+    "people management": ["leadership", "management"],
+    "stakeholder management": ["communication", "management"],
+    "client management": ["communication", "relationship management"],
+    "strategic planning": ["management", "business strategy"],
+    "operations": ["management", "process improvement"],
+    "business development": ["sales", "communication"],
+
+    # Finance
+    "accounting": ["finance", "reporting"],
+    "bookkeeping": ["accounting", "finance"],
+    "financial analysis": ["finance", "reporting"],
+    "budgeting": ["finance", "planning"],
+    "forecasting": ["finance", "analysis"],
+    "auditing": ["compliance", "finance"],
+    "payroll": ["finance", "hr"],
+
+    # HR
+    "recruitment": ["hiring", "talent acquisition"],
+    "talent acquisition": ["recruitment", "sourcing"],
+    "onboarding": ["hr operations", "employee engagement"],
+    "performance management": ["hr operations", "employee management"],
+    "employee engagement": ["hr", "people management"],
+
+    # Sales / Marketing
+    "sales": ["communication", "negotiation"],
+    "marketing": ["branding", "communication"],
+    "digital marketing": ["seo", "social media", "marketing"],
+    "seo": ["digital marketing"],
+    "sem": ["digital marketing"],
+    "social media": ["marketing"],
+    "crm": ["customer relationship management", "sales"],
+    "lead generation": ["sales", "marketing"],
+    "market research": ["analysis", "marketing"],
+
+    # Design
+    "ui/ux design": ["figma", "design thinking"],
+    "ui design": ["design", "figma"],
+    "ux design": ["design thinking", "research"],
+    "figma": ["ui/ux design", "design"],
+
+    # Support / Logistics
+    "customer service": ["communication", "problem solving"],
+    "customer support": ["communication", "problem solving"],
+    "technical support": ["issue resolution", "customer support"],
+    "inventory management": ["logistics", "operations"],
+    "supply chain management": ["logistics", "procurement"],
+    "procurement": ["vendor management", "operations"],
+
     # Soft skills
     "teamwork": ["collaboration", "soft skills"],
     "team collaboration": ["teamwork", "soft skills"],
@@ -239,9 +435,12 @@ RELATED_SKILLS: Dict[str, List[str]] = {
     "critical thinking": ["problem solving", "soft skills"],
     "attention to detail": ["soft skills"],
     "communication": ["soft skills"],
-    "leadership": ["soft skills"],
+    "leadership": ["soft skills", "management"],
     "time management": ["soft skills"],
-    "problem solving": ["soft skills"],
+    "decision making": ["soft skills"],
+    "analytical thinking": ["problem solving", "soft skills"],
+    "presentation skills": ["communication", "soft skills"],
+    "negotiation": ["communication", "soft skills"],
 }
 
 
@@ -256,11 +455,7 @@ def clean_skill(skill: str) -> str:
 
 def normalize_skill(skill: str) -> str:
     """
-    Convert a skill into a normalized standard form.
-    Examples:
-        React.js -> react
-        Fast API -> fastapi
-        ML -> machine learning
+    Normalize a skill to its standard form.
     """
     cleaned = clean_skill(skill)
     return SKILL_SYNONYMS.get(cleaned, cleaned)
@@ -268,14 +463,7 @@ def normalize_skill(skill: str) -> str:
 
 def map_skills_to_category(skills: List[str]) -> Dict[str, List[str]]:
     """
-    Group normalized skills by category.
-
-    Example:
-    {
-        "Frontend": ["react", "html"],
-        "Backend": ["fastapi"],
-        "Soft Skills": ["teamwork"]
-    }
+    Group normalized skills into categories.
     """
     categorized = defaultdict(list)
 
@@ -283,7 +471,7 @@ def map_skills_to_category(skills: List[str]) -> Dict[str, List[str]]:
         normalized = normalize_skill(skill)
         category = SKILL_CATEGORIES.get(normalized, "Other")
 
-        if normalized not in categorized[category]:
+        if normalized and normalized not in categorized[category]:
             categorized[category].append(normalized)
 
     return dict(categorized)
@@ -291,12 +479,7 @@ def map_skills_to_category(skills: List[str]) -> Dict[str, List[str]]:
 
 def expand_related_skills(skills: List[str]) -> List[str]:
     """
-    Expand skills with semantically related skills.
-
-    Example:
-        ["react", "fastapi"]
-        ->
-        ["react", "fastapi", "javascript", "frontend", "web development", "python", "backend", "api"]
+    Expand a skill list with semantically related skills.
     """
     expanded: Set[str] = set()
 
@@ -318,16 +501,23 @@ if __name__ == "__main__":
     sample_skills = [
         "React.js",
         "Fast API",
-        "PyTorch",
-        "JVM",
-        "Postgres",
-        "Node JS",
+        "MySQL",
         "ML",
-        "Web Development",
-        "DSA",
+        "Artificial Intelligence",
+        "Excel",
+        "Advanced Excel",
+        "Project Coordination",
+        "Team Handling",
+        "Accounting",
+        "Recruitment",
+        "Digital Marketing",
+        "SEO",
+        "Figma",
+        "Customer Service",
+        "Inventory Management",
         "Teamwork",
-        "Adaptability",
-        "Artificial Intelligence"
+        "Communication",
+        "Critical Thinking"
     ]
 
     print("Original Skills:")

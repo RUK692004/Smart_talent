@@ -11,13 +11,21 @@ def _normalize_text(value: Any) -> str:
 
 
 def _normalize_name(name: str) -> str:
-    """
-    Normalizes person name into title case.
-    Example: 'rohith u k' -> 'Rohith U K'
-    """
     if not name:
         return ""
-    return " ".join(word.capitalize() for word in name.split())
+
+    words = name.strip().split()
+    normalized = []
+
+    for word in words:
+        if len(word) == 1:
+            normalized.append(word.upper())
+        elif word.isupper():
+            normalized.append(word.capitalize())
+        else:
+            normalized.append(word.capitalize())
+
+    return " ".join(normalized)
 
 
 def _normalize_email(email: str) -> str:
