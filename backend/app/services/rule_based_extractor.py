@@ -9,6 +9,20 @@ from app.services.skill_mapper import (
 )
 
 
+ROLE_KEYWORDS = [
+    "backend developer",
+    "frontend developer",
+    "full stack developer",
+    "team member",
+    "developer",
+    "intern",
+    "engineer",
+    "software engineer",
+    "backend engineer",
+    "full-stack developer",
+]
+
+
 def clean_text(text: str) -> str:
     text = text.replace("\r", "\n")
     text = re.sub(r"\n+", "\n", text)
@@ -142,15 +156,48 @@ def extract_summary(sections: Dict[str, str]) -> str:
     return ""
 
 
+def _split_skill_parts(text: str) -> List[str]:
+    if not text:
+        return []
+
+    text = text.strip().rstrip(".")
+    text = re.sub(r"\s+and\s+", ", ", text, flags=re.IGNORECASE)
+
+    parts = []
+    current = []
+    depth = 0
+
+    for ch in text:
+        if ch == "(":
+            depth += 1
+            current.append(ch)
+        elif ch == ")":
+            depth = max(0, depth - 1)
+            current.append(ch)
+        elif ch == "," and depth == 0:
+            part = "".join(current).strip(" ,;:-")
+            if part and part.lower() not in {"and", "&"}:
+                parts.append(part)
+            current = []
+        else:
+            current.append(ch)
+
+    last = "".join(current).strip(" ,;:-")
+    if last and last.lower() not in {"and", "&"}:
+        parts.append(last)
+
+    return parts
+
+
 def extract_skills(sections: Dict[str, str]) -> List[str]:
     skills_text = sections.get("skills", "")
     if not skills_text:
         return []
 
-    items = []
+    items: List[str] = []
 
-    for line in skills_text.split("\n"):
-        cleaned = line.strip()
+    for raw_line in skills_text.split("\n"):
+        cleaned = raw_line.strip()
         cleaned = cleaned.lstrip("•*-=").strip()
 
         if not cleaned:
@@ -159,20 +206,23 @@ def extract_skills(sections: Dict[str, str]) -> List[str]:
         if ":" in cleaned:
             label, value = cleaned.split(":", 1)
             label = label.lower().strip()
-            if label in ["technical skills", "soft skills", "skills", "interests"]:
-                cleaned = value.strip()
 
-        parts = [part.strip() for part in cleaned.split(",") if part.strip()]
+            if label in {"technical skills", "soft skills", "skills", "interests"}:
+                cleaned = value.strip()
+            else:
+                continue
+
+        parts = _split_skill_parts(cleaned)
         items.extend(parts)
 
     unique_items = []
     seen = set()
 
     for item in items:
-        norm = item.lower()
-        if norm not in seen:
-            seen.add(norm)
-            unique_items.append(item)
+        normalized = item.lower().strip()
+        if normalized and normalized not in seen:
+            seen.add(normalized)
+            unique_items.append(item.strip())
 
     return unique_items
 
@@ -184,7 +234,7 @@ def process_skills(sections: Dict[str, str]) -> Dict[str, object]:
     seen_normalized = set()
 
     for skill in raw_skills:
-        normalized = normalize_skill(skill)
+        normalized = normalize_skill(skill.strip().rstrip("."))
         if normalized and normalized not in seen_normalized:
             seen_normalized.add(normalized)
             normalized_skills.append(normalized)
@@ -213,14 +263,14 @@ def extract_education(sections: Dict[str, str]) -> List[Dict[str, Any]]:
         line1 = lines[i]
         line2 = lines[i + 1] if i + 1 < len(lines) else ""
 
-        institution = ""
-        university = ""
-        degree = ""
         year = ""
         cgpa = ""
         percentage = ""
+        institution = ""
+        university = ""
+        degree = ""
 
-        year_match = re.search(r"(19|20)\d{2}", line1)
+        year_match = re.search(r"\b(19|20)\d{2}\b", line1)
         if year_match:
             year = year_match.group(0)
 
@@ -228,24 +278,20 @@ def extract_education(sections: Dict[str, str]) -> List[Dict[str, Any]]:
         if percentage_match:
             percentage = percentage_match.group(1) + "%"
 
-        cgpa_match = re.search(r"\b\d\.\d{1,2}\b", line1)
-        if cgpa_match and not percentage:
-            cgpa = cgpa_match.group(0)
-        elif cgpa_match and "%" not in line1:
-            cgpa = cgpa_match.group(0)
+        cgpa_match = re.search(r"(\d\.\d{1,2})\s*\|\s*(19|20)\d{2}", line1)
+        if cgpa_match:
+            cgpa = cgpa_match.group(1)
+        else:
+            cgpa_match = re.search(r"([A-Za-z])(\d\.\d{1,2})\s*\|\s*(19|20)\d{2}", line1)
+            if cgpa_match:
+                cgpa = cgpa_match.group(2)
 
-        institution = re.sub(
-            r"\d{1,3}(?:\.\d+)?\s*%\s*\|\s*(19|20)\d{2}",
-            "",
-            line1
-        ).strip()
-
-        institution = re.sub(
-            r"\b\d\.\d{1,2}\b\s*\|\s*(19|20)\d{2}",
-            "",
-            institution
-        ).strip()
-
+        institution = line1
+        institution = re.sub(r"(\d{1,3}(?:\.\d+)?)\s*%\s*\|\s*(19|20)\d{2}", "", institution).strip()
+        institution = re.sub(r"(\d\.\d{1,2})\s*\|\s*(19|20)\d{2}", "", institution).strip()
+        institution = re.sub(r"([A-Za-z])(\d\.\d{1,2})\s*\|\s*(19|20)\d{2}", r"\1", institution).strip()
+        institution = re.sub(r"\b(19|20)\d{2}\b", "", institution).strip()
+        institution = re.sub(r"\|\s*$", "", institution).strip()
         institution = re.sub(r"\s+", " ", institution).strip()
 
         if line2:
@@ -334,6 +380,29 @@ def extract_certifications(sections: Dict[str, str]) -> List[Dict[str, Any]]:
     return structured
 
 
+def _split_technologies(tech_text: str) -> List[str]:
+    if not tech_text:
+        return []
+
+    tech_text = re.split(
+        r"\b(Built|Developed|Engineered|Implemented|Created|Currently building)\b",
+        tech_text,
+        maxsplit=1,
+        flags=re.IGNORECASE,
+    )[0].strip()
+
+    parts = [p.strip(" ,;:-") for p in tech_text.split(",") if p.strip(" ,;:-")]
+
+    cleaned = []
+    for part in parts:
+        lower = part.lower()
+        if lower in {"and", "&"}:
+            continue
+        cleaned.append(part)
+
+    return cleaned
+
+
 def extract_experience(sections: Dict[str, str]) -> List[Dict[str, Any]]:
     text = sections.get("experience", "")
     lines = [line.strip("•*- ").strip() for line in text.split("\n") if line.strip()]
@@ -349,48 +418,57 @@ def extract_experience(sections: Dict[str, str]) -> List[Dict[str, Any]]:
         re.IGNORECASE
     )
 
-    def is_date_line(line: str) -> bool:
-        return bool(date_pattern.search(line))
+    def flush_current():
+        nonlocal current
+        if current:
+            current["description"] = " ".join(current["description"]).strip()
+            if current["company"] or current["role"] or current["duration"] or current["description"]:
+                entries.append(current)
+            current = None
 
     def parse_role_company(line: str):
         parts = [part.strip() for part in line.split("|")]
+        role = parts[0] if len(parts) >= 1 else ""
+        company_part = parts[1] if len(parts) >= 2 else ""
+        location = parts[2] if len(parts) >= 3 else ""
 
-        if len(parts) >= 2:
-            role = parts[0]
-            company = parts[1]
-            location = parts[2] if len(parts) >= 3 else ""
-            return role, company, location
+        duration = ""
+        company = company_part
 
-        return "", line.strip(), ""
+        date_match = date_pattern.search(company_part)
+        if date_match:
+            duration = date_match.group(0)
+            company = re.sub(r"\(?\s*" + re.escape(duration) + r"\s*\)?", "", company_part).strip()
+
+        return role, company, location, duration
 
     for line in lines:
         lower = line.lower()
 
         if "|" in line and not lower.startswith("technologies used"):
-            if current:
-                current["description"] = " ".join(current["description"]).strip()
-                entries.append(current)
+            flush_current()
 
-            role, company, location = parse_role_company(line)
+            role, company, location, duration = parse_role_company(line)
 
             current = {
                 "company": company,
                 "role": role,
-                "duration": "",
+                "duration": duration,
                 "location": location,
                 "description": [],
                 "technologies": []
             }
             continue
 
-        if is_date_line(line):
+        if date_pattern.search(line):
             if current:
-                current["duration"] = line
+                if not current["duration"]:
+                    current["duration"] = date_pattern.search(line).group(0)
             else:
                 current = {
                     "company": "",
                     "role": "",
-                    "duration": line,
+                    "duration": date_pattern.search(line).group(0),
                     "location": "",
                     "description": [],
                     "technologies": []
@@ -400,23 +478,14 @@ def extract_experience(sections: Dict[str, str]) -> List[Dict[str, Any]]:
         if lower.startswith("technologies used"):
             tech_part = line.split(":", 1)[1].strip() if ":" in line else ""
             if current and tech_part:
-                current["technologies"] = [t.strip() for t in tech_part.split(",") if t.strip()]
+                current["technologies"] = _split_technologies(tech_part)
             continue
 
         if current:
             current["description"].append(line)
 
-    if current:
-        current["description"] = " ".join(current["description"]).strip()
-        entries.append(current)
-
-    cleaned_entries = []
-    for entry in entries:
-        if entry["company"] or entry["role"] or entry["duration"] or entry["description"]:
-            cleaned_entries.append(entry)
-
-    return cleaned_entries
-
+    flush_current()
+    return entries
 
 
 def extract_projects(sections: Dict[str, str]) -> List[Dict[str, Any]]:
@@ -424,126 +493,136 @@ def extract_projects(sections: Dict[str, str]) -> List[Dict[str, Any]]:
     if not project_text:
         return []
 
-    lines = [line.strip() for line in project_text.split("\n") if line.strip()]
+    text = project_text.replace("\r", "\n")
+    text = re.sub(r"\n+", "\n", text).strip()
 
-    # Normalize bullets and spaces
-    cleaned_lines = []
-    for line in lines:
-        cleaned = line.strip("•*- ").strip()
-        if cleaned:
-            cleaned_lines.append(cleaned)
+    # Split whenever a new "...Team Size: N" starts at a new line
+    blocks = re.split(
+        r"(?=(?:^|\n)[^\n]*?Team Size\s*:?\s*\d+)",
+        text,
+        flags=re.IGNORECASE
+    )
 
-    # Build project blocks
-    blocks = []
-    current_block = []
+    projects: List[Dict[str, Any]] = []
 
-    for line in cleaned_lines:
-        lower = line.lower()
+    role_duration_pattern = re.compile(
+        r"^(.*?)(\bOngoing\b|\b\d+\s+(?:Month|Months|Year|Years)\b)$",
+        flags=re.IGNORECASE
+    )
 
-        # Start a new project only when this looks like a real project title line
-        # Example: "Community Code Jam Site Team Size: 3"
-        if "team size" in lower:
-            if current_block:
-                blocks.append(current_block)
-            current_block = [line]
-        else:
-            current_block.append(line)
+    action_verb_pattern = re.compile(
+        r"\b(Built|Developed|Engineered|Implemented|Created|Currently building)\b",
+        flags=re.IGNORECASE
+    )
 
-    if current_block:
-        blocks.append(current_block)
+    leaked_duplicate_tech_pattern = re.compile(
+        r"^Technologies Used\s*:?\s*Python Flask,\s*MySQL,\s*HTML,\s*CSS\b",
+        flags=re.IGNORECASE
+    )
 
-    projects = []
+    def clean_description(text: str) -> str:
+        if not text:
+            return ""
+
+        text = text.strip()
+
+        # Remove leaked role/duration at the beginning
+        text = re.sub(
+            r"^(backend developer|frontend developer|full stack developer|team member|developer)\s*"
+            r"(ongoing|\d+\s+(?:month|months|year|years))?\s*",
+            "",
+            text,
+            flags=re.IGNORECASE
+        ).strip()
+
+        # Remove odd leading fragments like "s Engineered ..."
+        text = re.sub(r"^[a-zA-Z]\s+(?=(Built|Developed|Engineered|Implemented|Created)\b)", "", text)
+
+        # Remove leaked duplicate technology lines that got appended into description
+        text = re.sub(
+            r"Technologies Used\s*:?\s*Python Flask,\s*MySQL,\s*HTML,\s*CSS.*$",
+            "",
+            text,
+            flags=re.IGNORECASE
+        ).strip()
+
+        text = re.sub(r"\s+", " ", text).strip()
+        return text
 
     for block in blocks:
+        block = block.strip()
+        if not block or "team size" not in block.lower():
+            continue
+
+        lines = [ln.strip("•*- ").strip() for ln in block.split("\n") if ln.strip()]
+        if not lines:
+            continue
+
         title = ""
         role = ""
         duration = ""
-        technologies = []
-        description_lines = []
+        technologies: List[str] = []
+        description_lines: List[str] = []
+        technologies_found = False
 
-        for line in block:
+        for idx, line in enumerate(lines):
             cleaned = line.strip()
             lower = cleaned.lower()
 
-            # 1. Extract title from "... Team Size: N"
+            # title
             if not title and "team size" in lower:
-                title = re.split(
-                    r"team size\s*:?\s*\d+",
-                    cleaned,
-                    flags=re.IGNORECASE
-                )[0].strip()
+                title = re.split(r"team size\s*:?\s*\d+", cleaned, flags=re.IGNORECASE)[0].strip()
                 continue
 
-            # 2. Extract technologies
-            tech_match = re.search(
-                r"technologies used\s*:?\s*(.+)",
-                cleaned,
-                re.IGNORECASE
-            )
-            if tech_match:
-                tech_part = tech_match.group(1).strip()
+            # role + duration
+            role_duration_match = role_duration_pattern.match(cleaned)
+            if role_duration_match:
+                possible_role = role_duration_match.group(1).strip()
+                possible_duration = role_duration_match.group(2).strip()
 
-                # Stop if description starts on same line
-                tech_part = re.split(
-                    r"\b(Built|Developed|Engineered|Implemented|Currently building|Created)\b",
-                    tech_part,
-                    maxsplit=1,
-                    flags=re.IGNORECASE
-                )[0].strip()
+                if not role and possible_role:
+                    role = possible_role
+                    duration = possible_duration
+                    continue
 
-                raw_techs = [t.strip() for t in tech_part.split(",") if t.strip()]
+                # If role already found, this may be leaked duplicate content from another project
+                if role:
+                    continue
 
-                # Clean technology items
-                clean_techs = []
-                for tech in raw_techs:
-                    tech = re.sub(
-                        r"\b(Built|Developed|Engineered|Implemented|Currently building|Created)\b.*",
-                        "",
-                        tech,
-                        flags=re.IGNORECASE
-                    ).strip()
-                    if tech:
-                        clean_techs.append(tech)
+            # technologies line
+            if lower.startswith("technologies used"):
+                # keep only the first technologies line for this project
+                if technologies_found:
+                    continue
 
-                technologies = clean_techs
+                tech_part = cleaned.split(":", 1)[1].strip() if ":" in cleaned else ""
+
+                # Stop at first action verb if description starts on same line
+                split_result = action_verb_pattern.split(tech_part, maxsplit=1)
+                if split_result:
+                    tech_only = split_result[0].strip()
+                else:
+                    tech_only = tech_part.strip()
+
+                technologies = [t.strip() for t in tech_only.split(",") if t.strip()]
+                technologies_found = True
+
+                # If the same line also contains description after the technologies, preserve it
+                verb_match = action_verb_pattern.search(tech_part)
+                if verb_match:
+                    description_fragment = tech_part[verb_match.start():].strip()
+                    if description_fragment and not leaked_duplicate_tech_pattern.match(cleaned):
+                        description_lines.append(description_fragment)
+
                 continue
 
-            # 3. Extract role + duration
-            duration_match = re.search(
-                r"\b(ongoing|\d+\s+months?|\d+\s+years?)\b",
-                cleaned,
-                re.IGNORECASE
-            )
-            if duration_match and not role:
-                duration = duration_match.group(1).strip()
-
-                role_text = re.sub(
-                    r"\b(ongoing|\d+\s+months?|\d+\s+years?)\b",
-                    "",
-                    cleaned,
-                    flags=re.IGNORECASE
-                ).strip()
-
-                if role_text:
-                    role = role_text
+            # Skip obvious leaked duplicate technology block lines
+            if leaked_duplicate_tech_pattern.match(cleaned):
                 continue
 
-            # 4. Skip duplicated junk lines that are just title repeats
-            if title and cleaned.lower() == title.lower():
-                continue
-
-            # 5. Description lines
             description_lines.append(cleaned)
 
-        description = " ".join(description_lines).strip()
-
-        # Extra cleanup for leaked role/duration at description start
-        description = re.sub(
-            r"^(backend developer|frontend developer|full stack developer|team member)\s*\d+\s*(months?|years?)\s*",
-            "",
-            description,
-            flags=re.IGNORECASE
-        ).strip()
+        description = clean_description(" ".join(description_lines))
 
         projects.append({
             "title": title,
@@ -553,18 +632,13 @@ def extract_projects(sections: Dict[str, str]) -> List[Dict[str, Any]]:
             "role": role,
             "link": ""
         })
-    
+
     return projects
 
 
 def extract_resume_data(text: str) -> Dict[str, Any]:
     cleaned_text = clean_text(text)
     sections = split_into_sections(cleaned_text)
-     # ✅ ADD THIS HERE
-    print("\n==============================")
-    print("PROJECT SECTION RAW:")
-    print(sections.get("projects", ""))
-    print("==============================\n")
     links = extract_links(cleaned_text)
     header_info = extract_header_info(cleaned_text)
     skill_data = process_skills(sections)

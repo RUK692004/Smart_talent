@@ -111,3 +111,81 @@ def get_jd_by_id(jd_id: int):
     finally:
         cur.close()
         conn.close()
+
+
+@router.delete("/delete/all")
+def delete_all_jds():
+    conn = get_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("SELECT COUNT(*) FROM job_descriptions")
+        total_count = cur.fetchone()[0]
+
+        if total_count == 0:
+            return {
+                "message": "No job descriptions found to delete",
+                "deleted_count": 0
+            }
+
+        # Delete all records
+        cur.execute("DELETE FROM job_descriptions")
+
+        # 🔥 Reset ID sequence
+        cur.execute("ALTER SEQUENCE job_descriptions_id_seq RESTART WITH 1")
+
+        conn.commit()
+
+        return {
+            "message": "All job descriptions deleted and ID reset successfully",
+            "deleted_count": total_count
+        }
+
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+    finally:
+        cur.close()
+        conn.close()
+
+
+@router.delete("/{jd_id}")
+def delete_jd_by_id(jd_id: int):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            SELECT id, title
+            FROM job_descriptions
+            WHERE id = %s
+        """, (jd_id,))
+        row = cur.fetchone()
+
+        if not row:
+            raise HTTPException(status_code=404, detail="Job description not found")
+
+        cur.execute("""
+            DELETE FROM job_descriptions
+            WHERE id = %s
+        """, (jd_id,))
+        conn.commit()
+
+        return {
+            "message": "Job description deleted successfully",
+            "deleted_jd": {
+                "id": row[0],
+                "title": row[1]
+            }
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+    finally:
+        cur.close()
+        conn.close()
