@@ -172,7 +172,7 @@ Make sure you have:
 ## 🔹 2. Clone Repository
 
 ```bash
-git clone https://github.com/your-username/smart-talent.git
+git clone https://github.com/RUK692004/Smart_talent.git
 cd smart-talent
 ```
 
