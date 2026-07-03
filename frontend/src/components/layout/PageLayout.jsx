@@ -1,5 +1,4 @@
 import Sidebar from "./Sidebar";
-import Navbar from "./Navbar";
 
 function PageLayout({ children }) {
   return (
@@ -7,15 +6,13 @@ function PageLayout({ children }) {
       style={{
         display: "flex",
         minHeight: "100vh",
-        background: "#f8fafc",
+        background: "linear-gradient(135deg, #faf8f5 0%, #f5f0eb 100%)",
       }}
     >
       <Sidebar />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        <Navbar />
-
-        <div style={{ padding: "20px", flex: 1 }}>
+        <div style={{ padding: "28px 32px", flex: 1 }}>
           {children}
         </div>
       </div>

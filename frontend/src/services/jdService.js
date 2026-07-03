@@ -16,6 +16,6 @@ export const deleteJD = async (id) => {
 };
 
 export const deleteAllJDs = async () => {
-  const res = await api.delete("/jd/clear-all");
+  const res = await api.delete("/jd/delete/all");
   return res.data;
 };

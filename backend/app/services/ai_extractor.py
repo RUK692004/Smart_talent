@@ -10,7 +10,7 @@ from app.services.prompts import RESUME_EXTRACTION_PROMPT
 load_dotenv(override=True)
 
 API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
-DEFAULT_GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3-flash-preview").strip()
+DEFAULT_GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip()
 
 client = genai.Client(api_key=API_KEY) if API_KEY else None
 
@@ -59,8 +59,8 @@ def extract_structured_data_with_ai(cleaned_text: str) -> Dict[str, Any]:
 
     candidate_models: List[str] = [
         DEFAULT_GEMINI_MODEL,
-        "gemini-3-flash-preview",
         "gemini-2.5-flash",
+        "gemini-2.0-flash",
     ]
 
     print("AI DEBUG: DEFAULT_GEMINI_MODEL =", DEFAULT_GEMINI_MODEL)

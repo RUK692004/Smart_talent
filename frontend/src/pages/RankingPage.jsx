@@ -160,32 +160,84 @@ function RankingPage() {
 
   return (
     <PageLayout>
-      <h1>Ranking Page</h1>
-      <p style={{ color: "#475569", marginTop: "8px" }}>
-        View ranked candidates, filter results, and inspect AI fit summaries.
-      </p>
+      {/* Header */}
+      <div style={{ marginBottom: "28px" }}>
+        <p style={{ margin: 0, color: "#6b7280", fontSize: "13px", fontWeight: "500" }}>
+          Recruitment Analytics
+        </p>
+        <h1 style={{
+          margin: "4px 0 0 0",
+          fontSize: "28px",
+          fontWeight: "700",
+          color: "#1a1a2e",
+          fontFamily: "'Georgia', serif",
+        }}>
+          Candidate Ranking
+        </h1>
+        <p style={{ color: "#6b7280", margin: "8px 0 0 0", fontSize: "14px" }}>
+          View ranked candidates, filter results, and inspect AI fit summaries.
+        </p>
+      </div>
 
-      <FilterBar
-        jdId={jdId}
-        setJdId={setJdId}
-        onLoadRanking={() => handleLoadRanking()}
-        minScore={minScore}
-        setMinScore={setMinScore}
-        skillFilter={skillFilter}
-        setSkillFilter={setSkillFilter}
-      />
+      {/* Filter Bar */}
+      <div style={{
+        background: "white",
+        borderRadius: "16px",
+        boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
+        padding: "24px",
+        border: "1px solid #e8e0d8",
+        marginBottom: "24px",
+      }}>
+        <FilterBar
+          jdId={jdId}
+          setJdId={setJdId}
+          onLoadRanking={() => handleLoadRanking()}
+          minScore={minScore}
+          setMinScore={setMinScore}
+          skillFilter={skillFilter}
+          setSkillFilter={setSkillFilter}
+        />
+      </div>
 
-      {loading && <p style={{ marginTop: "20px" }}>Loading ranking data...</p>}
+      {loading && (
+        <div style={{
+          background: "white",
+          borderRadius: "16px",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
+          padding: "48px",
+          border: "1px solid #e8e0d8",
+          textAlign: "center",
+          color: "#6b7280",
+        }}>
+          Loading ranking data...
+        </div>
+      )}
 
       {error && (
-        <p style={{ marginTop: "20px", color: "red" }}>{error}</p>
+        <div style={{
+          background: "#fef2f2",
+          borderRadius: "12px",
+          padding: "16px",
+          color: "#991b1b",
+          border: "1px solid #fecaca",
+        }}>
+          {error}
+        </div>
       )}
 
       {!loading && !error && (
-        <RankingTable
-          candidates={normalizedCandidates}
-          onSelectCandidate={setSelectedCandidate}
-        />
+        <div style={{
+          background: "white",
+          borderRadius: "16px",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
+          padding: "24px",
+          border: "1px solid #e8e0d8",
+        }}>
+          <RankingTable
+            candidates={normalizedCandidates}
+            onSelectCandidate={setSelectedCandidate}
+          />
+        </div>
       )}
 
       <CandidateDrawer

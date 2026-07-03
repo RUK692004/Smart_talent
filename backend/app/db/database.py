@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
-import psycopg2
+import psycopg
 
 DATABASE_URL = "postgresql://postgres:smart@localhost:5432/resume_db"
 
@@ -17,9 +17,9 @@ def get_db():
         db.close()
 
 def get_connection():
-    return psycopg2.connect(
+    return psycopg.connect(
         host="localhost",
-        database="resume_db",
+        dbname="resume_db",
         user="postgres",
         password="smart",
         port="5432"

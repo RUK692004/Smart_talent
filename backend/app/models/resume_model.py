@@ -10,6 +10,7 @@ class Resume(Base):
     id = Column(Integer, primary_key=True, index=True)
     filename = Column(String(255), nullable=False)
     filetype = Column(String(20), nullable=False)
+    file_path = Column(String(500), nullable=True)
     upload_date = Column(DateTime, default=datetime.utcnow, nullable=False)
     raw_text = Column(Text, nullable=True)
     parsed_data = Column(JSON, nullable=True)

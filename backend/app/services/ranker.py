@@ -503,7 +503,18 @@ def rank_candidates(
 ) -> List[Dict[str, Any]]:
     jd_skills_raw = safe_list(jd_data.get("skills", []))
     jd_skills = expand_jd_skills(jd_skills_raw)
-    jd_required_experience = float(jd_data.get("experience_required", 0) or 0)
+    raw_exp = jd_data.get("experience_required", "0") or "0"
+    try:
+        jd_required_experience = float(raw_exp)
+    except ValueError:
+        # Handle range strings like "0-1" by taking the upper bound
+        range_match = re.search(r"(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)", str(raw_exp))
+        if range_match:
+            jd_required_experience = float(range_match.group(2))
+        else:
+            # Fallback: try to extract any number from the string
+            num_match = re.search(r"(\d+(?:\.\d+)?)", str(raw_exp))
+            jd_required_experience = float(num_match.group(1)) if num_match else 0.0
     jd_keywords = safe_list(jd_data.get("keywords", []))
 
     ranked_results = []

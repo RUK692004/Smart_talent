@@ -4,7 +4,7 @@ from typing import Any, Dict, List
 
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = "gemma2:2b"
+OLLAMA_MODEL = "qwen3:8b"
 
 
 def safe_list(value: Any) -> List:

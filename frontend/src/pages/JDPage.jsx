@@ -57,7 +57,7 @@ function JDPage() {
           .split(",")
           .map((k) => k.trim())
           .filter(Boolean),
-        experience_required: Number(experience) || 0,
+        experience_required: experience.trim() || "0",
       });
 
       setTitle("");
@@ -83,180 +83,239 @@ function JDPage() {
 
   return (
     <PageLayout>
-      <div style={{ marginBottom: "24px" }}>
-        <h1 style={{ marginBottom: "8px" }}>Job Descriptions</h1>
-        <p style={{ color: "#64748b", margin: 0 }}>
-          Create structured job descriptions for more accurate ranking.
+      {/* Header */}
+      <div style={{ marginBottom: "28px" }}>
+        <p style={{ margin: 0, color: "#6b7280", fontSize: "13px", fontWeight: "500" }}>
+          Job Management
+        </p>
+        <h1 style={{
+          margin: "4px 0 0 0",
+          fontSize: "28px",
+          fontWeight: "700",
+          color: "#1a1a2e",
+          fontFamily: "'Georgia', serif",
+        }}>
+          Job Descriptions
+        </h1>
+        <p style={{ color: "#6b7280", margin: "8px 0 0 0", fontSize: "14px" }}>
+          Create structured job descriptions for more accurate AI-powered ranking.
         </p>
       </div>
 
-      <div
-        style={{
-          background: "white",
-          borderRadius: "14px",
-          boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
-          padding: "24px",
-          maxWidth: "760px",
-        }}
-      >
-        <h3 style={{ marginTop: 0, marginBottom: "18px" }}>Upload JD</h3>
-
-        <input
-          type="text"
-          placeholder="Job Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          style={inputStyle}
-        />
-
-        <textarea
-          placeholder="Job Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          style={{
-            ...inputStyle,
-            minHeight: "140px",
-            resize: "vertical",
-          }}
-        />
-
-        <input
-          type="text"
-          placeholder="Skills (comma separated, e.g. Python, FastAPI, PostgreSQL)"
-          value={skills}
-          onChange={(e) => setSkills(e.target.value)}
-          style={inputStyle}
-        />
-
-        <input
-          type="text"
-          placeholder="Keywords (comma separated, e.g. backend, API, cloud)"
-          value={keywords}
-          onChange={(e) => setKeywords(e.target.value)}
-          style={inputStyle}
-        />
-
-        <input
-          type="number"
-          placeholder="Experience Required (years)"
-          value={experience}
-          onChange={(e) => setExperience(e.target.value)}
-          style={{ ...inputStyle, maxWidth: "260px" }}
-        />
-
-        <button onClick={handleUpload} style={primaryButton}>
-          Upload JD
-        </button>
-      </div>
-
-      <div style={{ marginTop: "32px" }}>
-        <div style={{ marginBottom: "12px" }}>
-          <h3 style={{ marginBottom: "6px" }}>All Job Descriptions</h3>
-          <p style={{ color: "#64748b", margin: 0 }}>
-            Review uploaded roles and jump directly to candidate ranking.
-          </p>
-        </div>
-
-        {jds.length === 0 ? (
+      <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
+        {/* Upload Form */}
+        <div style={{ flex: "1", minWidth: "360px", maxWidth: "560px" }}>
           <div
             style={{
               background: "white",
-              borderRadius: "12px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-              padding: "18px",
-              color: "#64748b",
+              borderRadius: "16px",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
+              padding: "28px",
+              border: "1px solid #e8e0d8",
             }}
           >
-            No Job Descriptions yet. Upload one to get started.
+            <h3 style={{ margin: "0 0 20px 0", fontSize: "16px", fontWeight: "700", color: "#1a1a2e" }}>
+              Upload New JD
+            </h3>
+
+            <input
+              type="text"
+              placeholder="Job Title *"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              style={inputStyle}
+            />
+
+            <textarea
+              placeholder="Job Description *"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              style={{
+                ...inputStyle,
+                minHeight: "120px",
+                resize: "vertical",
+              }}
+            />
+
+            <input
+              type="text"
+              placeholder="Skills (comma separated, e.g. Python, FastAPI, PostgreSQL)"
+              value={skills}
+              onChange={(e) => setSkills(e.target.value)}
+              style={inputStyle}
+            />
+
+            <input
+              type="text"
+              placeholder="Keywords (comma separated, e.g. backend, API, cloud)"
+              value={keywords}
+              onChange={(e) => setKeywords(e.target.value)}
+              style={inputStyle}
+            />
+
+            <input
+              type="text"
+              placeholder="Experience Required (e.g. 0-1, 3, 5+)"
+              value={experience}
+              onChange={(e) => setExperience(e.target.value)}
+              style={{ ...inputStyle, maxWidth: "280px" }}
+            />
+
+            <button
+              onClick={handleUpload}
+              style={{
+                padding: "12px 28px",
+                borderRadius: "10px",
+                border: "none",
+                background: "#d4a843",
+                color: "white",
+                cursor: "pointer",
+                fontWeight: "700",
+                fontSize: "14px",
+                transition: "background 0.2s ease",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "#c49a33"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "#d4a843"; }}
+            >
+              Upload JD
+            </button>
           </div>
-        ) : (
-          <div
-            style={{
-              display: "flex",
-              gap: "16px",
-              flexWrap: "wrap",
-            }}
-          >
-            {jds.map((jd) => {
-              const parsed = jd.parsed_data || {};
-              const displayTitle = jd.title || parsed.title || "Untitled JD";
-              const displayDescription =
-                jd.description || parsed.description || "No description available.";
-              const displayExperience =
-                jd.experience_required ?? parsed.experience_required ?? 0;
-              const displaySkills = Array.isArray(jd.skills)
-                ? jd.skills
-                : Array.isArray(parsed.skills)
-                ? parsed.skills
-                : [];
+        </div>
 
-              return (
-                <div
-                  key={jd.id}
-                  style={{
-                    background: "white",
-                    borderRadius: "12px",
-                    padding: "18px",
-                    width: "310px",
-                    boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
-                    transition: "0.2s ease",
-                  }}
-                >
-                  <h4 style={{ marginTop: 0, marginBottom: "10px", lineHeight: "1.3" }}>
-                    {displayTitle}
-                  </h4>
+        {/* JD List */}
+        <div style={{ flex: "2", minWidth: "360px" }}>
+          <div style={{ marginBottom: "16px" }}>
+            <h3 style={{ margin: "0 0 6px 0", fontSize: "16px", fontWeight: "700", color: "#1a1a2e" }}>
+              All Job Descriptions
+            </h3>
+            <p style={{ color: "#6b7280", margin: 0, fontSize: "13px" }}>
+              Review uploaded roles and jump directly to candidate ranking.
+            </p>
+          </div>
 
-                  <p
+          {jds.length === 0 ? (
+            <div
+              style={{
+                background: "white",
+                borderRadius: "16px",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
+                padding: "40px",
+                border: "1px solid #e8e0d8",
+                color: "#9ca3af",
+                textAlign: "center",
+              }}
+            >
+              No Job Descriptions yet. Upload one to get started.
+            </div>
+          ) : (
+            <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+              {jds.map((jd) => {
+                const parsed = jd.parsed_data || {};
+                const displayTitle = jd.title || parsed.title || "Untitled JD";
+                const displayDescription = jd.description || parsed.description || "No description available.";
+                const displayExperience = jd.experience_required ?? parsed.experience_required ?? "0";
+                const displaySkills = Array.isArray(jd.skills)
+                  ? jd.skills
+                  : Array.isArray(parsed.skills)
+                  ? parsed.skills
+                  : [];
+
+                return (
+                  <div
+                    key={jd.id}
                     style={{
-                      color: "#475569",
-                      fontSize: "14px",
-                      lineHeight: "1.5",
-                      minHeight: "64px",
+                      background: "white",
+                      borderRadius: "16px",
+                      padding: "20px",
+                      width: "300px",
+                      boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
+                      border: "1px solid #e8e0d8",
+                      transition: "all 0.2s ease",
                     }}
+                    onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 8px 30px rgba(0,0,0,0.1)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.06)"; }}
                   >
-                    {displayDescription.length > 120
-                      ? displayDescription.slice(0, 120) + "..."
-                      : displayDescription}
-                  </p>
+                    <h4 style={{ margin: "0 0 10px 0", fontSize: "15px", fontWeight: "700", color: "#1a1a2e", lineHeight: "1.3" }}>
+                      {displayTitle}
+                    </h4>
 
-                  <p style={{ fontSize: "13px", color: "#64748b", marginBottom: "10px" }}>
-                    Experience Required: {displayExperience} years
-                  </p>
+                    <p style={{
+                      color: "#6b7280",
+                      fontSize: "13px",
+                      lineHeight: "1.5",
+                      minHeight: "60px",
+                      margin: "0 0 12px 0",
+                    }}>
+                      {displayDescription.length > 120
+                        ? displayDescription.slice(0, 120) + "..."
+                        : displayDescription}
+                    </p>
 
-                  <div style={{ marginBottom: "14px", minHeight: "36px" }}>
-                    {displaySkills.length > 0 ? (
-                      displaySkills.slice(0, 3).map((skill, index) => (
-                        <span key={index} style={tagStyle}>
-                          {skill}
-                        </span>
-                      ))
-                    ) : (
-                      <span style={{ fontSize: "12px", color: "#94a3b8" }}>
-                        No skills listed
-                      </span>
-                    )}
+                    <p style={{ fontSize: "12px", color: "#6b7280", margin: "0 0 10px 0" }}>
+                      Experience Required: <strong>{displayExperience}</strong>
+                    </p>
+
+                    <div style={{ marginBottom: "14px", minHeight: "28px" }}>
+                      {displaySkills.length > 0 ? (
+                        displaySkills.slice(0, 3).map((skill, index) => (
+                          <span key={index} style={{
+                            display: "inline-block",
+                            background: "#f0fdf4",
+                            color: "#166534",
+                            padding: "3px 8px",
+                            borderRadius: "4px",
+                            marginRight: "4px",
+                            marginBottom: "4px",
+                            fontSize: "11px",
+                            fontWeight: "600",
+                          }}>
+                            {skill}
+                          </span>
+                        ))
+                      ) : (
+                        <span style={{ fontSize: "12px", color: "#9ca3af" }}>No skills listed</span>
+                      )}
+                    </div>
+
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                      <button
+                        onClick={() => navigate(`/ranking?jd=${jd.id}`)}
+                        style={{
+                          padding: "8px 16px",
+                          borderRadius: "8px",
+                          border: "none",
+                          background: "#d4a843",
+                          color: "white",
+                          cursor: "pointer",
+                          fontWeight: "600",
+                          fontSize: "13px",
+                        }}
+                      >
+                        View Ranking
+                      </button>
+
+                      <button
+                        onClick={() => handleDelete(jd.id)}
+                        style={{
+                          padding: "8px 16px",
+                          borderRadius: "8px",
+                          border: "1px solid #fecaca",
+                          background: "white",
+                          color: "#dc2626",
+                          cursor: "pointer",
+                          fontWeight: "600",
+                          fontSize: "13px",
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
-
-                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                    <button
-                      onClick={() => navigate(`/ranking?jd=${jd.id}`)}
-                      style={primarySmallButton}
-                    >
-                      View Ranking
-                    </button>
-
-                    <button
-                      onClick={() => handleDelete(jd.id)}
-                      style={dangerSmallButton}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </PageLayout>
   );
@@ -268,50 +327,12 @@ const inputStyle = {
   marginBottom: "12px",
   padding: "12px 14px",
   borderRadius: "10px",
-  border: "1px solid #cbd5e1",
+  border: "1px solid #e0d8d0",
   fontSize: "14px",
   boxSizing: "border-box",
-};
-
-const primaryButton = {
-  padding: "10px 18px",
-  borderRadius: "10px",
-  border: "none",
-  background: "#2563eb",
-  color: "white",
-  cursor: "pointer",
-  fontWeight: "600",
-};
-
-const primarySmallButton = {
-  padding: "8px 12px",
-  borderRadius: "8px",
-  border: "none",
-  background: "#2563eb",
-  color: "white",
-  cursor: "pointer",
-  fontWeight: "600",
-};
-
-const dangerSmallButton = {
-  padding: "8px 12px",
-  borderRadius: "8px",
-  border: "none",
-  background: "#dc2626",
-  color: "white",
-  cursor: "pointer",
-  fontWeight: "600",
-};
-
-const tagStyle = {
-  display: "inline-block",
-  background: "#eef2ff",
-  color: "#3730a3",
-  padding: "4px 8px",
-  borderRadius: "6px",
-  marginRight: "6px",
-  marginBottom: "6px",
-  fontSize: "12px",
+  outline: "none",
+  background: "#faf8f5",
+  transition: "border-color 0.2s ease",
 };
 
 export default JDPage;

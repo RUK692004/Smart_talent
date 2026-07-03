@@ -3,7 +3,7 @@ from app.models.resume_model import Resume
 import os
 
 
-def save_resume_to_db(filename: str, raw_text: str, parsed_data: dict, job_role: str = None):
+def save_resume_to_db(filename: str, raw_text: str, parsed_data: dict, job_role: str = None, file_path: str = None):
     db = SessionLocal()
     try:
         _, ext = os.path.splitext(filename)
@@ -11,6 +11,7 @@ def save_resume_to_db(filename: str, raw_text: str, parsed_data: dict, job_role:
         resume = Resume(
             filename=filename,
             filetype=ext.lower(),
+            file_path=file_path,
             raw_text=raw_text,
             parsed_data=parsed_data,
             job_role=job_role

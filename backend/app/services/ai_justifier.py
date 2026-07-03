@@ -137,7 +137,7 @@ def get_candidate_gemini_models() -> List[str]:
         os.getenv("GEMINI_MODEL"),
         "gemini-2.5-flash",
         "gemini-2.5-flash-lite",
-        "gemini-3-flash-preview",
+        "gemini-2.0-flash",
     ]
 
     cleaned: List[str] = []

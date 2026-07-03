@@ -4,6 +4,7 @@ from typing import Dict, Any
 from app.parsers.file_parser import extract_text
 from app.utils.text_cleaner import clean_ocr_text, clean_docx_text
 from app.services.ai_extractor import extract_structured_data_with_ai
+from app.services.ollama_extractor import try_ollama_extract
 from app.services.rule_based_extractor import extract_resume_data
 from app.services.validators import validate_resume_data
 from app.services.normalizers import normalize_resume_data
@@ -40,6 +41,7 @@ def process_resume(file_path: str, filename: str) -> Dict[str, Any]:
             cleaned_text = clean_docx_text(extracted_text)
             print("PIPELINE: document text cleaned")
 
+        # --- STAGE 1: Try AI (Gemini API) ---
         ai_result = extract_structured_data_with_ai(cleaned_text)
 
         if ai_result.get("status") == "success":
@@ -49,14 +51,29 @@ def process_resume(file_path: str, filename: str) -> Dict[str, Any]:
         else:
             print("PIPELINE: AI extraction failed")
             print("PIPELINE: AI error message =", ai_result.get("message"))
-            structured_data = extract_resume_data(cleaned_text)
-            extraction_method = "rule_based"
 
-            if not isinstance(structured_data, dict):
-                structured_data = {}
+            # --- STAGE 2: Try local LLM (Ollama) ---
+            print("PIPELINE: trying Ollama fallback for extraction")
+            ollama_result = try_ollama_extract(cleaned_text)
 
-            structured_data["raw_text"] = cleaned_text
-            print("PIPELINE: rule-based structured extraction completed")
+            if ollama_result.get("status") == "success":
+                structured_data = ollama_result.get("structured_data", {})
+                extraction_method = "ollama"
+                print("PIPELINE: Ollama extraction successful")
+            else:
+                print("PIPELINE: Ollama extraction failed")
+                print("PIPELINE: Ollama error =", ollama_result.get("message"))
+
+                # --- STAGE 3: Rule-based fallback ---
+                print("PIPELINE: falling back to rule-based extraction")
+                structured_data = extract_resume_data(cleaned_text)
+                extraction_method = "rule_based"
+
+                if not isinstance(structured_data, dict):
+                    structured_data = {}
+
+                structured_data["raw_text"] = cleaned_text
+                print("PIPELINE: rule-based structured extraction completed")
 
         print("AFTER EXTRACTION:", structured_data.keys())
 

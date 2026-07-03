@@ -6,7 +6,7 @@ class JDCreate(BaseModel):
     title: str
     description: Optional[str] = ""
     skills: List[str] = []
-    experience_required: float = 0
+    experience_required: str = "0"
     keywords: List[str] = []
 
 

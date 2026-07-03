@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 from app.db.database import get_connection
 import json
 import os
+from fastapi.responses import FileResponse
 
 router = APIRouter(prefix="/resumes", tags=["Resumes"])
 
@@ -56,20 +57,20 @@ def clear_all_resumes():
     cur = conn.cursor()
 
     try:
-        # collect filenames before truncating
-        cur.execute("SELECT filename FROM resumes")
+        # collect file_paths before truncating
+        cur.execute("SELECT file_path FROM resumes WHERE file_path IS NOT NULL")
         rows = cur.fetchall()
-        filenames = [row[0] for row in rows]
+        file_paths = [row[0] for row in rows]
 
         # clear table and reset sequence
         cur.execute("TRUNCATE TABLE resumes RESTART IDENTITY;")
         conn.commit()
 
         # delete uploaded files
-        for filename in filenames:
-            file_path = os.path.join(UPLOAD_FOLDER, filename)
-            if os.path.exists(file_path) and os.path.isfile(file_path):
-                os.remove(file_path)
+        for fpath in file_paths:
+            full_path = os.path.join(UPLOAD_FOLDER, fpath)
+            if os.path.exists(full_path) and os.path.isfile(full_path):
+                os.remove(full_path)
 
         return {
             "message": "All resumes deleted successfully. ID sequence reset."
@@ -170,6 +171,48 @@ def get_resume_by_id(resume_id: int):
         conn.close()
 
 
+@router.get("/{resume_id}/download")
+def download_resume(resume_id: int):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            SELECT filename, file_path, filetype
+            FROM resumes
+            WHERE id = %s
+        """, (resume_id,))
+        row = cur.fetchone()
+
+        if not row:
+            raise HTTPException(status_code=404, detail="Resume not found")
+
+        filename, file_path, filetype = row
+
+        if not file_path:
+            raise HTTPException(status_code=404, detail="File path not found")
+
+        full_path = os.path.join(UPLOAD_FOLDER, file_path)
+
+        if not os.path.exists(full_path) or not os.path.isfile(full_path):
+            raise HTTPException(status_code=404, detail="File not found on server")
+
+        return FileResponse(
+            path=full_path,
+            filename=filename,
+            media_type=filetype or "application/octet-stream",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error downloading resume: {str(e)}")
+    finally:
+        cur.close()
+        conn.close()
+
+
 @router.delete("/{resume_id}")
 def delete_resume(resume_id: int):
     """
@@ -179,7 +222,7 @@ def delete_resume(resume_id: int):
     cur = conn.cursor()
 
     try:
-        cur.execute("SELECT id, filename FROM resumes WHERE id = %s", (resume_id,))
+        cur.execute("SELECT id, filename, file_path FROM resumes WHERE id = %s", (resume_id,))
         row = cur.fetchone()
 
         if not row:
@@ -189,9 +232,11 @@ def delete_resume(resume_id: int):
         conn.commit()
 
         # delete file from uploads folder
-        file_path = os.path.join(UPLOAD_FOLDER, row[1])
-        if os.path.exists(file_path) and os.path.isfile(file_path):
-            os.remove(file_path)
+        fpath = row[2]
+        if fpath:
+            full_path = os.path.join(UPLOAD_FOLDER, fpath)
+            if os.path.exists(full_path) and os.path.isfile(full_path):
+                os.remove(full_path)
 
         return {
             "message": "Resume deleted successfully",

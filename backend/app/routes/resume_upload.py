@@ -67,7 +67,8 @@ async def upload_resume(file: UploadFile = File(...)):
             filename=file.filename,
             raw_text=raw_text,
             parsed_data=structured_data,
-            job_role=job_role
+            job_role=job_role,
+            file_path=unique_filename
         )
         print(f"ROUTE: saved → resume_id = {saved_resume.id}")
 
