@@ -1,16 +1,13 @@
-import os
 import json
 from typing import Dict, Any, List
 
-from dotenv import load_dotenv
 from google import genai
 
-from app.services.prompts import RESUME_EXTRACTION_PROMPT
+from app.config.settings import settings
+from app.prompts.extraction import RESUME_EXTRACTION_PROMPT
 
-load_dotenv(override=True)
-
-API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
-DEFAULT_GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip()
+API_KEY = settings.GEMINI_API_KEY
+DEFAULT_GEMINI_MODEL = settings.GEMINI_MODEL
 
 client = genai.Client(api_key=API_KEY) if API_KEY else None
 

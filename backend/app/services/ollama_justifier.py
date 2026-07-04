@@ -2,9 +2,10 @@ import json
 import requests
 from typing import Any, Dict, List
 
+from app.config.settings import settings
 
-OLLAMA_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = "qwen3:8b"
+OLLAMA_URL = settings.OLLAMA_URL
+OLLAMA_MODEL = settings.OLLAMA_MODEL
 
 
 def safe_list(value: Any) -> List:

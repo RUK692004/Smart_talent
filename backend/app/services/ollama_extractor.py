@@ -1,11 +1,12 @@
 import json
 import requests
 from typing import Any, Dict, List
-from app.services.prompts import RESUME_EXTRACTION_PROMPT
 
+from app.config.settings import settings
+from app.prompts.extraction import OLLAMA_EXTRACTION_PROMPT
 
-OLLAMA_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = "gemma2:2b"
+OLLAMA_URL = settings.OLLAMA_URL
+OLLAMA_MODEL = settings.OLLAMA_MODEL
 
 
 def _safe_json_parse(text: str) -> Dict[str, Any]:
@@ -28,7 +29,7 @@ def try_ollama_extract(cleaned_text: str) -> Dict[str, Any]:
             "structured_data": {}
         }
 
-    prompt = f"{RESUME_EXTRACTION_PROMPT}\n\n{cleaned_text}"
+    prompt = f"{OLLAMA_EXTRACTION_PROMPT}\n\n{cleaned_text}"
 
     try:
         print("OLLAMA EXTRACTOR: calling Ollama")
@@ -40,7 +41,7 @@ def try_ollama_extract(cleaned_text: str) -> Dict[str, Any]:
                 "stream": False,
                 "format": "json",
             },
-            timeout=120,
+            timeout=300,  # Increased timeout to 5 minutes for large resumes
         )
         response.raise_for_status()
 
@@ -92,7 +93,14 @@ def try_ollama_extract(cleaned_text: str) -> Dict[str, Any]:
         print("OLLAMA EXTRACTOR: Ollama request timed out")
         return {
             "status": "error",
-            "message": "Ollama request timed out",
+            "message": "Ollama request timed out. Try using a faster model or a smaller resume.",
+            "structured_data": {}
+        }
+    except requests.exceptions.RequestException as e:
+        print(f"OLLAMA EXTRACTOR: Request error: {str(e)}")
+        return {
+            "status": "error",
+            "message": f"Ollama request failed: {str(e)}",
             "structured_data": {}
         }
     except Exception as e:

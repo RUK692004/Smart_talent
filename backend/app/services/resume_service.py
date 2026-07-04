@@ -1,5 +1,5 @@
-from app.db.database import SessionLocal
-from app.models.resume_model import Resume
+from app.database.database import SessionLocal
+from app.schemas.models.resume_model import Resume
 import os
 
 

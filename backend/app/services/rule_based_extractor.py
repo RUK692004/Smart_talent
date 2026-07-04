@@ -1,7 +1,7 @@
 import re
 from typing import Dict, List, Optional, Any
 
-from app.parsers.section_detector import split_into_sections
+from app.utils.parsers.section_detector import split_into_sections
 from app.services.skill_mapper import (
     normalize_skill,
     map_skills_to_category,
